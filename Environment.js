@@ -248,6 +248,7 @@ export class Environment extends Scene {
     this.car_roll = 0
     this.car_transform = Mat4.identity();
     this.car_transform = this.car_transform.times(Mat4.scale(C_SCALE, C_SCALE, C_SCALE));
+    this.car_transform = this.car_transform.times(Mat4.translation(0, 0, 30));
   }
 
 
@@ -271,6 +272,8 @@ export class Environment extends Scene {
     this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
         .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
     this.Z_POS = 0;
+    this.X_POS = 0;
+    this.Y_POS = 0;
     this.car_yaw = 0;
   }
   default_turn(){
@@ -279,6 +282,8 @@ export class Environment extends Scene {
     this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
         .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
     this.Z_POS = 0;
+    this.X_POS = 0;
+    this.Y_POS = 0;
     this.car_yaw = 0;
   }
   move_right() {
@@ -315,13 +320,16 @@ export class Environment extends Scene {
       this.car_speed+=0.01;
       if (this.right===true) {
         this.car_yaw -= this.angle_inc;
-
+        this.X_POS += 0.1*this.car_speed;
+        this.car_speed-=0.005;
       }
       else if (this.left===true) {
         this.car_yaw += this.angle_inc;
         // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
         //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
         // this.Z_POS = 0;
+        this.X_POS -= 0.1*this.car_speed;
+        this.car_speed-=0.005;
       }
     }
     else if(this.car_acc<0){
@@ -331,12 +339,16 @@ export class Environment extends Scene {
         // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
         //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
         // this.Z_POS = 0;
+        this.X_POS += 0.1*this.car_speed;
+        this.car_speed+=0.005;
       }
       else if (this.left===true) {
         this.car_yaw += this.angle_inc;
         // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
         //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
         // this.Z_POS = 0;
+        this.X_POS -= 0.1*this.car_speed;
+        this.car_speed+=0.005;
       }
     }
     else{
@@ -348,12 +360,16 @@ export class Environment extends Scene {
             // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
             //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
             // this.Z_POS = 0;
+            this.X_POS += 0.1*this.car_speed;
+            this.car_speed+=0.005;
           }
           else if (this.left===true) {
             this.car_yaw += this.angle_inc;
             // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
             //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
             // this.Z_POS = 0;
+            this.X_POS -= 0.1*this.car_speed;
+            this.car_speed+=0.005;
           }
         }
         else
@@ -367,12 +383,16 @@ export class Environment extends Scene {
             // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
             //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
             // this.Z_POS = 0;
+            this.X_POS += 0.1*this.car_speed;
+            this.car_speed-=0.005;
           }
           else if (this.left===true) {
             this.car_yaw += this.angle_inc;
             // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
             //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
             // this.Z_POS = 0;
+            this.X_POS -= 0.1*this.car_speed;
+            this.car_speed-=0.005;
           }
         }
         else
@@ -383,6 +403,7 @@ export class Environment extends Scene {
       this.car_speed = -0.5;
     if(this.car_speed>0.5)
       this.car_speed = 0.5;
+
     this.Z_POS -= 0.5*this.car_speed;
 
 
