@@ -18,12 +18,114 @@ const {
   Texture,
 } = tiny
 
-const { Square, Subdivision_Sphere, Torus, Axis_Arrows, Textured_Phong } = defs
+const { Square, Subdivision_Sphere, Torus, Axis_Arrows, Textured_Phong,Phong_Shader } = defs
 
 const S_SCALE = 100 // sky scale
 const G_SCALE = 100 // ground scale
 const A_SCALE = 8 // arch scale
 const R_SCALE = 6 // road scale
+
+
+export class Shape_From_File extends Shape {                                   // **Shape_From_File** is a versatile standalone Shape that imports
+                                                                               // all its arrays' data from an .obj 3D model file.
+  constructor(filename) {
+    super("position", "normal", "texture_coord");
+    // Begin downloading the mesh. Once that completes, return
+    // control to our parse_into_mesh function.
+    this.load_file(filename);
+  }
+
+  load_file(filename) {                             // Request the external file and wait for it to load.
+    // Failure mode:  Loads an empty shape.
+    return fetch(filename)
+        .then(response => {
+          if (response.ok) return Promise.resolve(response.text())
+          else return Promise.reject(response.status)
+        })
+        .then(obj_file_contents => this.parse_into_mesh(obj_file_contents))
+        .catch(error => {
+          this.copy_onto_graphics_card(this.gl);
+        })
+  }
+
+  parse_into_mesh(data) {                           // Adapted from the "webgl-obj-loader.js" library found online:
+    var verts = [], vertNormals = [], textures = [], unpacked = {};
+
+    unpacked.verts = [];
+    unpacked.norms = [];
+    unpacked.textures = [];
+    unpacked.hashindices = {};
+    unpacked.indices = [];
+    unpacked.index = 0;
+
+    var lines = data.split('\n');
+
+    var VERTEX_RE = /^v\s/;
+    var NORMAL_RE = /^vn\s/;
+    var TEXTURE_RE = /^vt\s/;
+    var FACE_RE = /^f\s/;
+    var WHITESPACE_RE = /\s+/;
+
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      var elements = line.split(WHITESPACE_RE);
+      elements.shift();
+
+      if (VERTEX_RE.test(line)) verts.push.apply(verts, elements);
+      else if (NORMAL_RE.test(line)) vertNormals.push.apply(vertNormals, elements);
+      else if (TEXTURE_RE.test(line)) textures.push.apply(textures, elements);
+      else if (FACE_RE.test(line)) {
+        var quad = false;
+        for (var j = 0, eleLen = elements.length; j < eleLen; j++) {
+          if (j === 3 && !quad) {
+            j = 2;
+            quad = true;
+          }
+          if (elements[j] in unpacked.hashindices)
+            unpacked.indices.push(unpacked.hashindices[elements[j]]);
+          else {
+            var vertex = elements[j].split('/');
+
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 0]);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 1]);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 2]);
+
+            if (textures.length) {
+              unpacked.textures.push(+textures[((vertex[1] - 1) || vertex[0]) * 2 + 0]);
+              unpacked.textures.push(+textures[((vertex[1] - 1) || vertex[0]) * 2 + 1]);
+            }
+
+            unpacked.norms.push(+vertNormals[((vertex[2] - 1) || vertex[0]) * 3 + 0]);
+            unpacked.norms.push(+vertNormals[((vertex[2] - 1) || vertex[0]) * 3 + 1]);
+            unpacked.norms.push(+vertNormals[((vertex[2] - 1) || vertex[0]) * 3 + 2]);
+
+            unpacked.hashindices[elements[j]] = unpacked.index;
+            unpacked.indices.push(unpacked.index);
+            unpacked.index += 1;
+          }
+          if (j === 3 && quad) unpacked.indices.push(unpacked.hashindices[elements[0]]);
+        }
+      }
+    }
+    {
+      const {verts, norms, textures} = unpacked;
+      for (var j = 0; j < verts.length / 3; j++) {
+        this.arrays.position.push(vec3(verts[3 * j], verts[3 * j + 1], verts[3 * j + 2]));
+        this.arrays.normal.push(vec3(norms[3 * j], norms[3 * j + 1], norms[3 * j + 2]));
+        this.arrays.texture_coord.push(vec(textures[2 * j], textures[2 * j + 1]));
+      }
+      this.indices = unpacked.indices;
+    }
+    this.normalize_positions(false);
+    this.ready = true;
+  }
+
+  draw(context, program_state, model_transform, material) {               // draw(): Same as always for shapes, but cancel all
+    // attempts to draw the shape before it loads:
+    if (this.ready)
+      super.draw(context, program_state, model_transform, material);
+  }
+}
 
 export class Environment extends Scene {
   /**
@@ -42,6 +144,11 @@ export class Environment extends Scene {
       square: new Square(),
       torus: new Torus(6, 15),
       axis: new Axis_Arrows(),
+      body: new Shape_From_File("assets/body.obj"),
+      fenders: new Shape_From_File("assets/fenders.obj"),
+      carlights: new Shape_From_File("assets/lights.obj"),
+      rear_front: new Shape_From_File("assets/rear_front.obj"),
+      wheels: new Shape_From_File("assets/wheels.obj")
     }
 
     // TODO:  Create the materials required to texture both cubes with the correct images and settings.
@@ -50,6 +157,27 @@ export class Environment extends Scene {
     this.materials = {
       phong: new Material(new Textured_Phong(), {
         color: hex_color('#ffffff'),
+      }),
+      body_color: new Material(new Phong_Shader(), {
+        color: hex_color('#f50a0a'),
+        ambient: 0.2,
+        diffusivity: 0.8,
+        specularity: 0.8,
+      }),
+      carlight_color: new Material(new Phong_Shader(), {
+        color: hex_color('#ffffff'),
+        ambient: 1,
+        diffusivity: 0.8,
+        specularity: 0.8,
+      }),
+      tyre_color: new Material(new Textured_Phong(), {
+        color: hex_color('#606363'),
+      }),
+      fender_color: new Material(new Phong_Shader(), {
+        color: hex_color('#000000'),
+        ambient: 1,
+        diffusivity: 0.8,
+        specularity: 0.8,
       }),
       grass: new Material(new Textured_Phong(), {
         color: color(0, 0, 0, 1),
@@ -77,6 +205,9 @@ export class Environment extends Scene {
         ambient: 0.5,
         diffusivity: 0.1,
         specularity: 0.1,
+      }),
+      rear_front_color: new Material(new Textured_Phong(), {
+        color: hex_color('#0080ff'),
       }),
     }
 
@@ -116,6 +247,11 @@ export class Environment extends Scene {
     let ground_transform = Mat4.identity()
     let arch_transform = Mat4.identity()
     let road_transform = Mat4.identity()
+    let car_transform = Mat4.identity()
+    let wheel_transform = Mat4.identity()
+    let fender_transform = Mat4.identity()
+    let carlight_trasform = Mat4.identity()
+    let rear_front_transfrom = Mat4.identity()
 
     // draw the sky
     sky_transform = sky_transform.times(Mat4.scale(S_SCALE, S_SCALE, S_SCALE))
@@ -165,5 +301,20 @@ export class Environment extends Scene {
         this.materials.stars
       )
     }
+
+    car_transform = car_transform.times(Mat4.rotation(Math.PI / 8, 0, 1, 0)).times(Mat4.translation(-31, 0.75, 75))
+    wheel_transform = car_transform.times(Mat4.translation(0, -0.4, 0 ))
+    rear_front_transfrom = car_transform.times(Mat4.translation(0, -0.25, -0.02 ))//.times(Mat4.rotation(Math.PI / 25, 0, 0, 0))
+    fender_transform = car_transform.times(Mat4.translation(0.5, -0.2, -1.15 )).times(Mat4.scale(0.2, 0.2, 0.2))
+    carlight_trasform = car_transform.times(Mat4.translation(-0.02, 0, 0.1 )).times(Mat4.scale(1.325, 1.4, 1.325))
+
+    this.shapes.body.draw(context, program_state, car_transform, this.materials.body_color);
+    this.shapes.wheels.draw(context, program_state, wheel_transform, this.materials.tyre_color);
+    this.shapes.fenders.draw(context, program_state, fender_transform, this.materials.fender_color);
+    this.shapes.carlights.draw(context, program_state, carlight_trasform, this.materials.carlight_color);
+    this.shapes.rear_front.draw(context, program_state, rear_front_transfrom, this.materials.rear_front_color);
+
+
+
   }
 }
