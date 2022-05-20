@@ -29,6 +29,111 @@ const FORWARD_MOVE = 0.1
 const BACKWARD_MOVE = 0.1
 const RIGHT_MOVE = 0.1
 const LEFT_MOVE = 0.1
+<<<<<<< Updated upstream
+=======
+
+export class Shape_From_File extends Shape {                                   // **Shape_From_File** is a versatile standalone Shape that imports
+                                                                               // all its arrays' data from an .obj 3D model file.
+  constructor(filename) {
+    super("position", "normal", "texture_coord");
+    // Begin downloading the mesh. Once that completes, return
+    // control to our parse_into_mesh function.
+    this.load_file(filename);
+  }
+
+  load_file(filename) {                             // Request the external file and wait for it to load.
+    // Failure mode:  Loads an empty shape.
+    return fetch(filename)
+        .then(response => {
+          if (response.ok) return Promise.resolve(response.text())
+          else return Promise.reject(response.status)
+        })
+        .then(obj_file_contents => this.parse_into_mesh(obj_file_contents))
+        .catch(error => {
+          this.copy_onto_graphics_card(this.gl);
+        })
+  }
+
+  parse_into_mesh(data) {                           // Adapted from the "webgl-obj-loader.js" library found online:
+    var verts = [], vertNormals = [], textures = [], unpacked = {};
+
+    unpacked.verts = [];
+    unpacked.norms = [];
+    unpacked.textures = [];
+    unpacked.hashindices = {};
+    unpacked.indices = [];
+    unpacked.index = 0;
+
+    var lines = data.split('\n');
+
+    var VERTEX_RE = /^v\s/;
+    var NORMAL_RE = /^vn\s/;
+    var TEXTURE_RE = /^vt\s/;
+    var FACE_RE = /^f\s/;
+    var WHITESPACE_RE = /\s+/;
+
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      var elements = line.split(WHITESPACE_RE);
+      elements.shift();
+
+      if (VERTEX_RE.test(line)) verts.push.apply(verts, elements);
+      else if (NORMAL_RE.test(line)) vertNormals.push.apply(vertNormals, elements);
+      else if (TEXTURE_RE.test(line)) textures.push.apply(textures, elements);
+      else if (FACE_RE.test(line)) {
+        var quad = false;
+        for (var j = 0, eleLen = elements.length; j < eleLen; j++) {
+          if (j === 3 && !quad) {
+            j = 2;
+            quad = true;
+          }
+          if (elements[j] in unpacked.hashindices)
+            unpacked.indices.push(unpacked.hashindices[elements[j]]);
+          else {
+            var vertex = elements[j].split('/');
+
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 0]);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 1]);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 2]);
+
+            if (textures.length) {
+              unpacked.textures.push(+textures[((vertex[1] - 1) || vertex[0]) * 2 + 0]);
+              unpacked.textures.push(+textures[((vertex[1] - 1) || vertex[0]) * 2 + 1]);
+            }
+
+            unpacked.norms.push(+vertNormals[((vertex[2] - 1) || vertex[0]) * 3 + 0]);
+            unpacked.norms.push(+vertNormals[((vertex[2] - 1) || vertex[0]) * 3 + 1]);
+            unpacked.norms.push(+vertNormals[((vertex[2] - 1) || vertex[0]) * 3 + 2]);
+
+            unpacked.hashindices[elements[j]] = unpacked.index;
+            unpacked.indices.push(unpacked.index);
+            unpacked.index += 1;
+          }
+          if (j === 3 && quad) unpacked.indices.push(unpacked.hashindices[elements[0]]);
+        }
+      }
+    }
+    {
+      const {verts, norms, textures} = unpacked;
+      for (var j = 0; j < verts.length / 3; j++) {
+        this.arrays.position.push(vec3(verts[3 * j], verts[3 * j + 1], verts[3 * j + 2]));
+        this.arrays.normal.push(vec3(norms[3 * j], norms[3 * j + 1], norms[3 * j + 2]));
+        this.arrays.texture_coord.push(vec(textures[2 * j], textures[2 * j + 1]));
+      }
+      this.indices = unpacked.indices;
+    }
+    this.normalize_positions(false);
+    this.ready = true;
+  }
+
+  draw(context, program_state, model_transform, material) {               // draw(): Same as always for shapes, but cancel all
+    // attempts to draw the shape before it loads:
+    if (this.ready)
+      super.draw(context, program_state, model_transform, material);
+  }
+}
+
+>>>>>>> Stashed changes
 export class Environment extends Scene {
   /**
    *  **Base_scene** is a Scene that can be added to any display canvas.
@@ -96,6 +201,10 @@ export class Environment extends Scene {
       vec3(0, 0, 0),
       vec3(0, 1, 0)
     )
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
     this.X_POS = 0;
     this.prev_X_POS = 0;
     this.Y_POS = 0;
@@ -110,6 +219,10 @@ export class Environment extends Scene {
     this.rev = false;
   }
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
   move_forward() {
     //this.X_POS += 1;
     //this.Z_POS -= FORWARD_MOVE;
@@ -133,6 +246,7 @@ export class Environment extends Scene {
   move_left() {
     //this.Y_POS -= 1;
     this.X_POS -= LEFT_MOVE;
+<<<<<<< Updated upstream
   }
 
   movement(t){
@@ -179,7 +293,54 @@ export class Environment extends Scene {
     this.Z_POS -= 0.5*this.car_speed;
 
 
+=======
+>>>>>>> Stashed changes
   }
+
+  movement(t){
+    // if (this.t === 0 && this.car_acc !== 0){
+    //   this.prev_t = t;
+    //   //this.t = t;
+    // }
+    // this.t = t - this.prev_t;
+    // if(this.car_acc===0 ) {
+    //   this.prev_car_speed = this.car_speed;
+    // }
+    // if(this.car_speed===0){
+    //   this.prev_Z_POS = this.Z_POS;
+    //   this.prev_X_POS = this.X_POS;
+    //   this.prev_Y_POS = this.Y_POS;
+    // }
+    //this.car_speed = this.prev_car_speed + this.car_acc * this.t;
+    //let dist = 0.5*(this.car_speed + this.prev_car_speed);
+    //this.Z_POS = this.prev_Z_POS - dist;
+    if (this.car_acc>0){
+      this.car_speed+=0.01;
+    }
+    else if(this.car_acc<0){
+      this.car_speed-=0.01;
+    }
+    else{
+      if(this.rev===false) {
+        if(this.car_speed>0)
+          this.car_speed -= 0.1;
+        else
+          this.car_speed = 0;
+      }
+      else {
+        if(this.car_speed>0)
+          this.car_speed += 0.1;
+        else
+          this.car_speed = 0;
+      }
+    }
+    if(this.car_speed<-0.5)
+      this.car_speed = -0.5;
+    if(this.car_speed>0.5)
+      this.car_speed = 0.5;
+    this.Z_POS -= 0.5*this.car_speed;
+  }
+
 
   make_control_panel() {
     // Add neccesary controls to make the game work
@@ -201,7 +362,10 @@ export class Environment extends Scene {
       // Define the global camera and projection matrices, which are stored in program_state.
       program_state.set_camera(Mat4.translation(0, -1, -90))
     }
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
     if (this.attached !== undefined) {
       let desired = this.initial_camera_location;
       if (this.attached() !== null)
@@ -209,7 +373,10 @@ export class Environment extends Scene {
       desired = desired.map((x,i) => Vector.from(program_state.camera_inverse[i]).mix(x, 0.1));
       program_state.set_camera(desired);
     }
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
     program_state.projection_transform = Mat4.perspective(
       Math.PI / 4,
       context.width / context.height,
@@ -266,7 +433,7 @@ export class Environment extends Scene {
     // draw the arches
     arch_transform = arch_transform
       .times(Mat4.translation(0, 0, 100))
-      .times(Mat4.scale(A_SCALE, A_SCALE, A_SCALE))
+      .times(Mat4.scale(A_SCALE, A_SCALE, A_SCALE*0.5))
     for (let i = 0; i < 10; i++) {
       arch_transform = arch_transform.times(Mat4.translation(0, 0, -2))
       this.shapes.torus.draw(
@@ -277,10 +444,43 @@ export class Environment extends Scene {
       )
     }
 
+<<<<<<< Updated upstream
     // draw the car
     this.movement(program_state.animation_time / 1000);
     car_transform = car_transform.times(Mat4.scale(C_SCALE, C_SCALE, C_SCALE))
                     .times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+=======
+
+    // draw the car
+    this.movement(program_state.animation_time / 1000);
+    car_transform = car_transform.times(Mat4.scale(C_SCALE, C_SCALE, C_SCALE))
+        .times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+
+    // //for (let i = 0; i < 10; i++) {
+    // //car_transform = car_transform.times(Mat4.translation(0, 0, -2))
+    // this.shapes.car.draw(
+    //     context,
+    //     program_state,
+    //     car_transform,
+    //     this.materials.car
+    // )
+    this.car = car_transform.times(Mat4.translation(0, 0.5, 0));
+    // }
+
+
+    car_transform = car_transform.times(Mat4.rotation(Math.PI / 8, 0, 1, 0.0)).times(Mat4.translation(0, 0.6, 0))
+    wheel_transform = car_transform.times(Mat4.translation(0, -0.4, 0 ))
+    rear_front_transfrom = car_transform.times(Mat4.translation(0, -0.25, -0.02 ))//.times(Mat4.rotation(Math.PI / 25, 0, 0, 0))
+    fender_transform = car_transform.times(Mat4.translation(0.5, -0.2, -1.15 )).times(Mat4.scale(0.2, 0.2, 0.2))
+    carlight_trasform = car_transform.times(Mat4.translation(-0.02, 0, 0.1 )).times(Mat4.scale(1.325, 1.4, 1.325))
+
+    this.shapes.body.draw(context, program_state, car_transform, this.materials.body_color);
+    this.shapes.wheels.draw(context, program_state, wheel_transform, this.materials.tyre_color);
+    this.shapes.fenders.draw(context, program_state, fender_transform, this.materials.fender_color);
+    this.shapes.carlights.draw(context, program_state, carlight_trasform, this.materials.carlight_color);
+    this.shapes.rear_front.draw(context, program_state, rear_front_transfrom, this.materials.rear_front_color);
+
+>>>>>>> Stashed changes
 
     //for (let i = 0; i < 10; i++) {
       //car_transform = car_transform.times(Mat4.translation(0, 0, -2))
