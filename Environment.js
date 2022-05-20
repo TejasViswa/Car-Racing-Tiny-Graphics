@@ -240,6 +240,14 @@ export class Environment extends Scene {
     this.t = 0;
     this.prev_t = 0;
     this.rev = false;
+    this.right = false;
+    this.left = false;
+    this.car_yaw = 0;
+    this.angle_inc = Math.PI/180;
+    this.car_pitch = 0;
+    this.car_roll = 0
+    this.car_transform = Mat4.identity();
+    this.car_transform = this.car_transform.times(Mat4.scale(C_SCALE, C_SCALE, C_SCALE));
   }
 
 
@@ -258,15 +266,32 @@ export class Environment extends Scene {
     //this.t = 0;
     this.car_acc = 0;
     this.rev = false;
+    this.right = false;
+    this.left = false;
+    this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+        .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
+    this.Z_POS = 0;
+    this.car_yaw = 0;
+  }
+  default_turn(){
+    this.right = false;
+    this.left = false;
+    this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+        .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
+    this.Z_POS = 0;
+    this.car_yaw = 0;
   }
   move_right() {
     //this.Y_POS += 1;
-    this.X_POS += RIGHT_MOVE;
+    //this.X_POS += RIGHT_MOVE;
+    this.right = true;
+    this.left = false;
   }
   move_left() {
     //this.Y_POS -= 1;
-    this.X_POS -= LEFT_MOVE;
-
+    //this.X_POS -= LEFT_MOVE;
+    this.left = true;
+    this.right = false;
   }
 
   movement(t){
@@ -288,20 +313,68 @@ export class Environment extends Scene {
     //this.Z_POS = this.prev_Z_POS - dist;
     if (this.car_acc>0){
       this.car_speed+=0.01;
+      if (this.right===true) {
+        this.car_yaw -= this.angle_inc;
+
+      }
+      else if (this.left===true) {
+        this.car_yaw += this.angle_inc;
+        // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+        //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
+        // this.Z_POS = 0;
+      }
     }
     else if(this.car_acc<0){
       this.car_speed-=0.01;
+      if (this.right===true) {
+        this.car_yaw -= this.angle_inc;
+        // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+        //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
+        // this.Z_POS = 0;
+      }
+      else if (this.left===true) {
+        this.car_yaw += this.angle_inc;
+        // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+        //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
+        // this.Z_POS = 0;
+      }
     }
     else{
       if(this.rev===false) {
-        if(this.car_speed>0)
+        if(this.car_speed>0) {
           this.car_speed -= 0.1;
+          if (this.right===true) {
+            this.car_yaw -= this.angle_inc;
+            // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+            //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
+            // this.Z_POS = 0;
+          }
+          else if (this.left===true) {
+            this.car_yaw += this.angle_inc;
+            // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+            //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
+            // this.Z_POS = 0;
+          }
+        }
         else
           this.car_speed = 0;
       }
       else {
-        if(this.car_speed>0)
+        if(this.car_speed>0) {
           this.car_speed += 0.1;
+          if (this.right===true) {
+            this.car_yaw -= this.angle_inc;
+            // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+            //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
+            // this.Z_POS = 0;
+          }
+          else if (this.left===true) {
+            this.car_yaw += this.angle_inc;
+            // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+            //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
+            // this.Z_POS = 0;
+          }
+        }
         else
           this.car_speed = 0;
       }
@@ -315,49 +388,49 @@ export class Environment extends Scene {
 
   }
 
-  movement(t){
-    // if (this.t === 0 && this.car_acc !== 0){
-    //   this.prev_t = t;
-    //   //this.t = t;
-    // }
-    // this.t = t - this.prev_t;
-    // if(this.car_acc===0 ) {
-    //   this.prev_car_speed = this.car_speed;
-    // }
-    // if(this.car_speed===0){
-    //   this.prev_Z_POS = this.Z_POS;
-    //   this.prev_X_POS = this.X_POS;
-    //   this.prev_Y_POS = this.Y_POS;
-    // }
-    //this.car_speed = this.prev_car_speed + this.car_acc * this.t;
-    //let dist = 0.5*(this.car_speed + this.prev_car_speed);
-    //this.Z_POS = this.prev_Z_POS - dist;
-    if (this.car_acc>0){
-      this.car_speed+=0.01;
-    }
-    else if(this.car_acc<0){
-      this.car_speed-=0.01;
-    }
-    else{
-      if(this.rev===false) {
-        if(this.car_speed>0)
-          this.car_speed -= 0.1;
-        else
-          this.car_speed = 0;
-      }
-      else {
-        if(this.car_speed>0)
-          this.car_speed += 0.1;
-        else
-          this.car_speed = 0;
-      }
-    }
-    if(this.car_speed<-0.5)
-      this.car_speed = -0.5;
-    if(this.car_speed>0.5)
-      this.car_speed = 0.5;
-    this.Z_POS -= 0.5*this.car_speed;
-  }
+  // movement(t){
+  //   // if (this.t === 0 && this.car_acc !== 0){
+  //   //   this.prev_t = t;
+  //   //   //this.t = t;
+  //   // }
+  //   // this.t = t - this.prev_t;
+  //   // if(this.car_acc===0 ) {
+  //   //   this.prev_car_speed = this.car_speed;
+  //   // }
+  //   // if(this.car_speed===0){
+  //   //   this.prev_Z_POS = this.Z_POS;
+  //   //   this.prev_X_POS = this.X_POS;
+  //   //   this.prev_Y_POS = this.Y_POS;
+  //   // }
+  //   //this.car_speed = this.prev_car_speed + this.car_acc * this.t;
+  //   //let dist = 0.5*(this.car_speed + this.prev_car_speed);
+  //   //this.Z_POS = this.prev_Z_POS - dist;
+  //   if (this.car_acc>0){
+  //     this.car_speed+=0.01;
+  //   }
+  //   else if(this.car_acc<0){
+  //     this.car_speed-=0.01;
+  //   }
+  //   else{
+  //     if(this.rev===false) {
+  //       if(this.car_speed>0)
+  //         this.car_speed -= 0.1;
+  //       else
+  //         this.car_speed = 0;
+  //     }
+  //     else {
+  //       if(this.car_speed>0)
+  //         this.car_speed += 0.1;
+  //       else
+  //         this.car_speed = 0;
+  //     }
+  //   }
+  //   if(this.car_speed<-0.5)
+  //     this.car_speed = -0.5;
+  //   if(this.car_speed>0.5)
+  //     this.car_speed = 0.5;
+  //   this.Z_POS -= 0.5*this.car_speed;
+  // }
 
 
   make_control_panel() {
@@ -368,8 +441,8 @@ export class Environment extends Scene {
     this.new_line();
     this.key_triggered_button("Move Forward", ["u"], this.move_forward,'#6E6460', this.default_acc);
     this.key_triggered_button("Move Backward", ["j"], this.move_backward,'#6E6460', this.default_acc);
-    this.key_triggered_button("Move Right", ["k"], this.move_right);
-    this.key_triggered_button("Move Left", ["h"], this.move_left);
+    this.key_triggered_button("Move Right", ["k"], this.move_right, this.default_turn);
+    this.key_triggered_button("Move Left", ["h"], this.move_left,  this.default_turn);
   }
 
   display(context, program_state) {
@@ -465,10 +538,11 @@ export class Environment extends Scene {
 
     // draw the car
     this.movement(program_state.animation_time / 1000);
-    car_transform = car_transform.times(Mat4.scale(C_SCALE, C_SCALE, C_SCALE))
-        .times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
-
-
+    // car_transform = car_transform.times(Mat4.scale(C_SCALE, C_SCALE, C_SCALE))
+    //     .times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+    //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0))
+    car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+                    .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
     car_transform = car_transform.times(Mat4.rotation(Math.PI / 8, 0, 1, 0.0)).times(Mat4.translation(0, 0.6, 0))
 
     wheel_transform = car_transform.times(Mat4.translation(0, -0.4, 0 ))
@@ -484,7 +558,7 @@ export class Environment extends Scene {
 
 
 
-    this.car = car_transform.times(Mat4.translation(0, 0.4, 0));
+    this.car = car_transform.times(Mat4.translation(0, 0.4, 0)).times(Mat4.rotation(Math.PI / 8, 0, -1, 0.0));
 
   }
 }
