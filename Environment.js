@@ -18,13 +18,19 @@ const {
   Texture,
 } = tiny
 
-const { Square, Subdivision_Sphere, Torus, Axis_Arrows, Textured_Phong,Phong_Shader } = defs
+
+const { Square, Subdivision_Sphere, Torus, Axis_Arrows, Textured_Phong, Cube, Phong_Shader } = defs
+
 
 const S_SCALE = 100 // sky scale
 const G_SCALE = 100 // ground scale
 const A_SCALE = 8 // arch scale
 const R_SCALE = 6 // road scale
-
+const C_SCALE = 2 // car scale
+const FORWARD_MOVE = 0.1
+const BACKWARD_MOVE = 0.1
+const RIGHT_MOVE = 0.1
+const LEFT_MOVE = 0.1
 
 export class Shape_From_File extends Shape {                                   // **Shape_From_File** is a versatile standalone Shape that imports
                                                                                // all its arrays' data from an .obj 3D model file.
@@ -127,6 +133,7 @@ export class Shape_From_File extends Shape {                                   /
   }
 }
 
+
 export class Environment extends Scene {
   /**
    *  **Base_scene** is a Scene that can be added to any display canvas.
@@ -144,11 +151,13 @@ export class Environment extends Scene {
       square: new Square(),
       torus: new Torus(6, 15),
       axis: new Axis_Arrows(),
+
       body: new Shape_From_File("assets/body.obj"),
       fenders: new Shape_From_File("assets/fenders.obj"),
       carlights: new Shape_From_File("assets/lights.obj"),
       rear_front: new Shape_From_File("assets/rear_front.obj"),
       wheels: new Shape_From_File("assets/wheels.obj")
+
     }
 
     // TODO:  Create the materials required to texture both cubes with the correct images and settings.
@@ -206,8 +215,10 @@ export class Environment extends Scene {
         diffusivity: 0.1,
         specularity: 0.1,
       }),
+
       rear_front_color: new Material(new Textured_Phong(), {
         color: hex_color('#0080ff'),
+
       }),
     }
 
@@ -216,10 +227,149 @@ export class Environment extends Scene {
       vec3(0, 0, 0),
       vec3(0, 1, 0)
     )
+
+    this.X_POS = 0;
+    this.prev_X_POS = 0;
+    this.Y_POS = 0;
+    this.prev_Y_POS = 0;
+    this.Z_POS = 0;
+    this.prev_Z_POS = 0;
+    this.car_speed = 0;
+    this.prev_car_speed = 0;
+    this.car_acc = 0;
+    this.t = 0;
+    this.prev_t = 0;
+    this.rev = false;
   }
+
+
+  move_forward() {
+    //this.X_POS += 1;
+    //this.Z_POS -= FORWARD_MOVE;
+    this.car_acc = 1;
+  }
+  move_backward() {
+    //this.X_POS -= 1;
+    //this.Z_POS += BACKWARD_MOVE;
+    this.car_acc = -0.1;
+    this.rev = true;
+  }
+  default_acc(){
+    //this.t = 0;
+    this.car_acc = 0;
+    this.rev = false;
+  }
+  move_right() {
+    //this.Y_POS += 1;
+    this.X_POS += RIGHT_MOVE;
+  }
+  move_left() {
+    //this.Y_POS -= 1;
+    this.X_POS -= LEFT_MOVE;
+
+  }
+
+  movement(t){
+    // if (this.t === 0 && this.car_acc !== 0){
+    //   this.prev_t = t;
+    //   //this.t = t;
+    // }
+    // this.t = t - this.prev_t;
+    // if(this.car_acc===0 ) {
+    //   this.prev_car_speed = this.car_speed;
+    // }
+    // if(this.car_speed===0){
+    //   this.prev_Z_POS = this.Z_POS;
+    //   this.prev_X_POS = this.X_POS;
+    //   this.prev_Y_POS = this.Y_POS;
+    // }
+    //this.car_speed = this.prev_car_speed + this.car_acc * this.t;
+    //let dist = 0.5*(this.car_speed + this.prev_car_speed);
+    //this.Z_POS = this.prev_Z_POS - dist;
+    if (this.car_acc>0){
+      this.car_speed+=0.01;
+    }
+    else if(this.car_acc<0){
+      this.car_speed-=0.01;
+    }
+    else{
+      if(this.rev===false) {
+        if(this.car_speed>0)
+          this.car_speed -= 0.1;
+        else
+          this.car_speed = 0;
+      }
+      else {
+        if(this.car_speed>0)
+          this.car_speed += 0.1;
+        else
+          this.car_speed = 0;
+      }
+    }
+    if(this.car_speed<-0.5)
+      this.car_speed = -0.5;
+    if(this.car_speed>0.5)
+      this.car_speed = 0.5;
+    this.Z_POS -= 0.5*this.car_speed;
+
+
+  }
+
+  movement(t){
+    // if (this.t === 0 && this.car_acc !== 0){
+    //   this.prev_t = t;
+    //   //this.t = t;
+    // }
+    // this.t = t - this.prev_t;
+    // if(this.car_acc===0 ) {
+    //   this.prev_car_speed = this.car_speed;
+    // }
+    // if(this.car_speed===0){
+    //   this.prev_Z_POS = this.Z_POS;
+    //   this.prev_X_POS = this.X_POS;
+    //   this.prev_Y_POS = this.Y_POS;
+    // }
+    //this.car_speed = this.prev_car_speed + this.car_acc * this.t;
+    //let dist = 0.5*(this.car_speed + this.prev_car_speed);
+    //this.Z_POS = this.prev_Z_POS - dist;
+    if (this.car_acc>0){
+      this.car_speed+=0.01;
+    }
+    else if(this.car_acc<0){
+      this.car_speed-=0.01;
+    }
+    else{
+      if(this.rev===false) {
+        if(this.car_speed>0)
+          this.car_speed -= 0.1;
+        else
+          this.car_speed = 0;
+      }
+      else {
+        if(this.car_speed>0)
+          this.car_speed += 0.1;
+        else
+          this.car_speed = 0;
+      }
+    }
+    if(this.car_speed<-0.5)
+      this.car_speed = -0.5;
+    if(this.car_speed>0.5)
+      this.car_speed = 0.5;
+    this.Z_POS -= 0.5*this.car_speed;
+  }
+
 
   make_control_panel() {
     // Add neccesary controls to make the game work
+    this.key_triggered_button("World view", ["Control", "0"], () => this.attached = () => null);
+    this.new_line();
+    this.key_triggered_button("Car view", ["Control", "1"], () => this.attached = () => this.car);
+    this.new_line();
+    this.key_triggered_button("Move Forward", ["u"], this.move_forward,'#6E6460', this.default_acc);
+    this.key_triggered_button("Move Backward", ["j"], this.move_backward,'#6E6460', this.default_acc);
+    this.key_triggered_button("Move Right", ["k"], this.move_right);
+    this.key_triggered_button("Move Left", ["h"], this.move_left);
   }
 
   display(context, program_state) {
@@ -229,6 +379,14 @@ export class Environment extends Scene {
       )
       // Define the global camera and projection matrices, which are stored in program_state.
       program_state.set_camera(Mat4.translation(0, -1, -90))
+    }
+
+    if (this.attached !== undefined) {
+      let desired = this.initial_camera_location;
+      if (this.attached() !== null)
+        desired = Mat4.inverse(this.attached().times(Mat4.translation(0, 0, 5)));
+      desired = desired.map((x,i) => Vector.from(program_state.camera_inverse[i]).mix(x, 0.1));
+      program_state.set_camera(desired);
     }
 
     program_state.projection_transform = Mat4.perspective(
@@ -248,6 +406,7 @@ export class Environment extends Scene {
     let arch_transform = Mat4.identity()
     let road_transform = Mat4.identity()
     let car_transform = Mat4.identity()
+
     let wheel_transform = Mat4.identity()
     let fender_transform = Mat4.identity()
     let carlight_trasform = Mat4.identity()
@@ -291,7 +450,7 @@ export class Environment extends Scene {
     // draw the arches
     arch_transform = arch_transform
       .times(Mat4.translation(0, 0, 100))
-      .times(Mat4.scale(A_SCALE, A_SCALE, A_SCALE))
+      .times(Mat4.scale(A_SCALE, A_SCALE, A_SCALE*0.5))
     for (let i = 0; i < 10; i++) {
       arch_transform = arch_transform.times(Mat4.translation(0, 0, -2))
       this.shapes.torus.draw(
@@ -302,7 +461,16 @@ export class Environment extends Scene {
       )
     }
 
-    car_transform = car_transform.times(Mat4.rotation(Math.PI / 8, 0, 1, 0)).times(Mat4.translation(-31, 0.75, 75))
+
+
+    // draw the car
+    this.movement(program_state.animation_time / 1000);
+    car_transform = car_transform.times(Mat4.scale(C_SCALE, C_SCALE, C_SCALE))
+        .times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+
+
+    car_transform = car_transform.times(Mat4.rotation(Math.PI / 8, 0, 1, 0.0)).times(Mat4.translation(0, 0.6, 0))
+
     wheel_transform = car_transform.times(Mat4.translation(0, -0.4, 0 ))
     rear_front_transfrom = car_transform.times(Mat4.translation(0, -0.25, -0.02 ))//.times(Mat4.rotation(Math.PI / 25, 0, 0, 0))
     fender_transform = car_transform.times(Mat4.translation(0.5, -0.2, -1.15 )).times(Mat4.scale(0.2, 0.2, 0.2))
@@ -315,6 +483,8 @@ export class Environment extends Scene {
     this.shapes.rear_front.draw(context, program_state, rear_front_transfrom, this.materials.rear_front_color);
 
 
+
+    this.car = car_transform.times(Mat4.translation(0, 0.4, 0));
 
   }
 }
