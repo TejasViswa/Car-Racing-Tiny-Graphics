@@ -44,6 +44,7 @@ export class Environment extends Scene {
       axis: new Axis_Arrows(),
     }
 
+    this.prev_z = -90;
     // TODO:  Create the materials required to texture both cubes with the correct images and settings.
     //        Make each Material from the correct shader.  Phong_Shader will work initially, but when
     //        you get to requirements 6 and 7 you will need different ones.
@@ -106,6 +107,7 @@ export class Environment extends Scene {
       1,
       100
     )
+    
 
     const light_position = vec4(10, 10, 10, 1)
     program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)]
@@ -116,6 +118,21 @@ export class Environment extends Scene {
     let ground_transform = Mat4.identity()
     let arch_transform = Mat4.identity()
     let road_transform = Mat4.identity()
+    
+    // Check which way car is moving (z-axis only for now)
+    let dz = this.prev_z - program_state.camera_inverse[2][3];
+    this.prev_z = program_state.camera_inverse[2][3];
+    
+    // Moving "forward" with respect to original camera location and orientation
+   if (dz < 0){
+      this.positional_offset = Mat4.translation(0, 0, this.prev_z + dz)
+      console.log(this.prev_z + dz);
+   }
+    // Moving "backward" with respect to original camera location and orientation
+    else if (dz > 0){ 
+      this.positional_offset = Mat4.translation(0, 0, this.prev_z + dz);
+      console.log(this.prev_z + dz);
+    }
 
     // draw the sky
     sky_transform = sky_transform.times(Mat4.scale(S_SCALE, S_SCALE, S_SCALE))
