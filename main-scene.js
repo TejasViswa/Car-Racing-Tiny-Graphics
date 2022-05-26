@@ -49,7 +49,7 @@ Object.assign(
   { Surfaces_Demo },
   { Text_Demo },
   { Transforms_Sandbox },
-  { Environment }
+  { Environment },
 )
 
 // ******************** End extra step
