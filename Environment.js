@@ -18,13 +18,13 @@ const {
   Texture,
 } = tiny
 
-const { Square, Subdivision_Sphere, Torus, Axis_Arrows, Textured_Phong } = defs
+const { Square, Subdivision_Sphere, Torus, Axis_Arrows, Closed_Cone, Rounded_Capped_Cylinder, Textured_Phong } = defs
 
 const S_SCALE = 100 // sky scale
 const G_SCALE = 100 // ground scale
 const A_SCALE = 8 // arch scale
 const R_SCALE = 6 // road scale
-
+const C_SCALE = 3; // arrow scale
 export class Environment extends Scene {
   /**
    *  **Base_scene** is a Scene that can be added to any display canvas.
@@ -42,6 +42,8 @@ export class Environment extends Scene {
       square: new Square(),
       torus: new Torus(6, 15),
       axis: new Axis_Arrows(),
+      cylinder: new Rounded_Capped_Cylinder(10, 10),
+      cone: new Closed_Cone(10, 10),
     }
 
     this.prev_z = -90;
@@ -109,33 +111,43 @@ export class Environment extends Scene {
     )
     
 
-    const light_position = vec4(10, 10, 10, 1)
-    program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)]
+    const light_position = vec4(10, 10, 10, 1);
+    program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
 
     let t = program_state.animation_time / 1000,
       dt = program_state.animation_delta_time / 1000
-    let sky_transform = Mat4.identity()
-    let ground_transform = Mat4.identity()
-    let arch_transform = Mat4.identity()
-    let road_transform = Mat4.identity()
+    let sky_transform = Mat4.identity();
+    let ground_transform = Mat4.identity();
+    let arch_transform = Mat4.identity();
+    let road_transform = Mat4.identity();
+    let arrow_transform = Mat4.identity();
+    
+    arrow_transform = arrow_transform.times(Mat4.translation(0, 3, 75));
+    arrow_transform = arrow_transform.times(Mat4.scale(1, 1, C_SCALE));
+    this.shapes.cylinder.draw(context, program_state, arrow_transform, this.materials.sky);
+    arrow_transform = arrow_transform.times(Mat4.scale(3, 1.5, 3/5));
+    arrow_transform = arrow_transform.times(Mat4.rotation(Math.PI, 0, 1, 0));
+    arrow_transform = arrow_transform.times(Mat4.translation(0, 0, C_SCALE*3/5));
+    this.shapes.cone.draw(context, program_state, arrow_transform, this.materials.sky);
     
     // Check which way car is moving (z-axis only for now)
     let dz = this.prev_z - program_state.camera_inverse[2][3];
     this.prev_z = program_state.camera_inverse[2][3];
     
     // Moving "forward" with respect to original camera location and orientation
-   if (dz < 0){
-      this.positional_offset = Mat4.translation(0, 0, this.prev_z + dz)
-      console.log(this.prev_z + dz);
-   }
+    if (dz < 0){
+        this.positional_offset = Mat4.translation(0, 0, this.prev_z + dz)
+        //console.log(this.prev_z + dz);
+    }
     // Moving "backward" with respect to original camera location and orientation
     else if (dz > 0){ 
-      this.positional_offset = Mat4.translation(0, 0, this.prev_z + dz);
-      console.log(this.prev_z + dz);
+        this.positional_offset = Mat4.translation(0, 0, this.prev_z + dz);
+        //console.log(this.prev_z + dz);
     }
-
+    
     // draw the sky
-    sky_transform = sky_transform.times(Mat4.scale(S_SCALE, S_SCALE, S_SCALE))
+    sky_transform = sky_transform.times(Mat4.scale(S_SCALE, S_SCALE, S_SCALE));
+    
     this.shapes.sphere.draw(
       context,
       program_state,
@@ -182,5 +194,7 @@ export class Environment extends Scene {
         this.materials.stars
       )
     }
+    arch_transform = arch_transform.times(Mat4.translation(0, 5, 0));
+    this.shapes.cylinder.draw(context, program_state, arch_transform, this.materials.stars);
   }
 }
