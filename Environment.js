@@ -25,7 +25,7 @@ const S_SCALE = 100 // sky scale
 const G_SCALE = 100 // ground scale
 const A_SCALE = 8 // arch scale
 const R_SCALE = 6 // road scale
-const ARR_SCALE = 3; // arrow scale
+const RB_SCALE = 3; // roadblock scale
 const C_SCALE = 2 // car scale
 const FORWARD_MOVE = 0.1
 const BACKWARD_MOVE = 0.1
@@ -159,6 +159,7 @@ export class Environment extends Scene {
       carlights: new Shape_From_File("assets/lights.obj"),
       rear_front: new Shape_From_File("assets/rear_front.obj"),
       wheels: new Shape_From_File("assets/wheels.obj"),
+
       roadblock: new Shape_From_File("assets/roadblock.obj"),
     }
 
@@ -218,11 +219,12 @@ export class Environment extends Scene {
         diffusivity: 0.1,
         specularity: 0.1,
       }),
-
       rear_front_color: new Material(new Textured_Phong(), {
         color: hex_color('#0080ff'),
-
       }),
+      roadblock_color: new Material(new Textured_Phong(), {
+        color: hex_color("#2F4F4F"),
+      })
     }
 
     this.initial_camera_location = Mat4.look_at(
@@ -243,6 +245,8 @@ export class Environment extends Scene {
     this.t = 0;
     this.prev_t = 0;
     this.rev = false;
+
+    this.obstacles = [];
   }
 
 
@@ -435,21 +439,43 @@ export class Environment extends Scene {
         //console.log(this.prev_z + dz);
     } */
     
-    let wheel_transform = Mat4.identity()
-    let fender_transform = Mat4.identity()
-    let carlight_trasform = Mat4.identity()
-    let rear_front_transfrom = Mat4.identity()
+    let wheel_transform = Mat4.identity();
+    let fender_transform = Mat4.identity();
+    let carlight_trasform = Mat4.identity();
+    let rear_front_transfrom = Mat4.identity();
+    let roadblock_transform = Mat4.identity();
 
+    if (Math.random() > 0.8 && (Math.floor(program_state.animation_time) % 5 === 0) && (this.Z_POS - this.prev_Z_POS !== 0)) {
+      if (this.obstacles.length > 0){
+        console.log(this.obstacles[this.obstacles.length -1][2][2])
+        roadblock_transform = roadblock_transform
+      .times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE))
+      .times(Mat4.translation(0, 1/RB_SCALE, (-10 + this.obstacles[this.obstacles.length -1][2][2])/RB_SCALE));
+      } 
+      else{ 
+        roadblock_transform = roadblock_transform
+        .times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE))
+        .times(Mat4.translation(0, 1/RB_SCALE, (-10 + this.Z_POS)/RB_SCALE));
+      }
+      //.times(Mat4.rotation(Math.PI/4, 0, 1, 0));
+    //this.shapes.roadblock.draw(context, program_state, roadblock_transform, this.materials.roadblock_color);
+    this.obstacles.push(roadblock_transform);
+    }
+    if (this.obstacles.length > 0){
+      this.obstacles.forEach(element => {
+        this.shapes.roadblock.draw(context, program_state, element, this.materials.roadblock_color);
+      });
+    }
+    
     // draw the sky
     sky_transform = sky_transform.times(Mat4.scale(S_SCALE, S_SCALE, S_SCALE))
-      .times(Mat4.translation(0, 0, this.Z_POS/S_SCALE));
+      .times(Mat4.translation(0, 0, this.Z_POS*C_SCALE/S_SCALE));
     this.shapes.sphere.draw(
       context,
       program_state,
       sky_transform,
       this.materials.sky
     )
-    console.log(this.X_POS, this.Y_POS, this.Z_POS);
     // draw the ground
     ground_transform = ground_transform
       .times(Mat4.translation(0, 0, this.Z_POS))
