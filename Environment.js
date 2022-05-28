@@ -442,14 +442,13 @@ export class Environment extends Scene {
 
     // draw the sky
     sky_transform = sky_transform.times(Mat4.scale(S_SCALE, S_SCALE, S_SCALE))
-      .times(Mat4.translation(0, 0, this.Z_POS/S_SCALE));
+      .times(Mat4.translation(0, 0, this.Z_POS*C_SCALE/S_SCALE));
     this.shapes.sphere.draw(
       context,
       program_state,
       sky_transform,
       this.materials.sky
     )
-    console.log(this.X_POS, this.Y_POS, this.Z_POS);
     // draw the ground
     ground_transform = ground_transform
       .times(Mat4.translation(0, 0, this.Z_POS))
