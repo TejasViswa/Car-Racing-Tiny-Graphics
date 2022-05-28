@@ -158,8 +158,8 @@ export class Environment extends Scene {
       fenders: new Shape_From_File("assets/fenders.obj"),
       carlights: new Shape_From_File("assets/lights.obj"),
       rear_front: new Shape_From_File("assets/rear_front.obj"),
-      wheels: new Shape_From_File("assets/wheels.obj")
-
+      wheels: new Shape_From_File("assets/wheels.obj"),
+      roadblock: new Shape_From_File("assets/roadblock.obj"),
     }
 
     this.prev_z = -90;
