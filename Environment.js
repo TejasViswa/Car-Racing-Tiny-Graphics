@@ -451,7 +451,7 @@ export class Environment extends Scene {
     )
     // draw the ground
     ground_transform = ground_transform
-      .times(Mat4.translation(0, 0, this.Z_POS))
+      .times(Mat4.translation(0, 0, this.Z_POS*C_SCALE))
       .times(Mat4.rotation(Math.PI / 2, 1, 0, 0))
       .times(Mat4.scale(G_SCALE, G_SCALE, G_SCALE));
       
