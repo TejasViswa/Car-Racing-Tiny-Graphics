@@ -246,7 +246,7 @@ export class Environment extends Scene {
     this.prev_t = 0;
     this.rev = false;
 
-    this.obstacles = [];
+    this.obstacles = [Mat4.identity().times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE)).times(Mat4.translation(-0.45*RB_SCALE, 1/RB_SCALE, -23))];
   }
 
 
@@ -317,52 +317,7 @@ export class Environment extends Scene {
       this.car_speed = -0.5;
     if(this.car_speed>0.5)
       this.car_speed = 0.5;
-    this.Z_POS -= 0.5*this.car_speed;
-
-
-  }
-
-  movement(t){
-    // if (this.t === 0 && this.car_acc !== 0){
-    //   this.prev_t = t;
-    //   //this.t = t;
-    // }
-    // this.t = t - this.prev_t;
-    // if(this.car_acc===0 ) {
-    //   this.prev_car_speed = this.car_speed;
-    // }
-    // if(this.car_speed===0){
-    //   this.prev_Z_POS = this.Z_POS;
-    //   this.prev_X_POS = this.X_POS;
-    //   this.prev_Y_POS = this.Y_POS;
-    // }
-    //this.car_speed = this.prev_car_speed + this.car_acc * this.t;
-    //let dist = 0.5*(this.car_speed + this.prev_car_speed);
-    //this.Z_POS = this.prev_Z_POS - dist;
-    if (this.car_acc>0){
-      this.car_speed+=0.01;
-    }
-    else if(this.car_acc<0){
-      this.car_speed-=0.01;
-    }
-    else{
-      if(this.rev===false) {
-        if(this.car_speed>0)
-          this.car_speed -= 0.1;
-        else
-          this.car_speed = 0;
-      }
-      else {
-        if(this.car_speed>0)
-          this.car_speed += 0.1;
-        else
-          this.car_speed = 0;
-      }
-    }
-    if(this.car_speed<-0.5)
-      this.car_speed = -0.5;
-    if(this.car_speed>0.5)
-      this.car_speed = 0.5;
+    this.prev_Z_POS = this.Z_POS;
     this.Z_POS -= 0.5*this.car_speed;
   }
 
@@ -444,21 +399,22 @@ export class Environment extends Scene {
     let carlight_trasform = Mat4.identity();
     let rear_front_transfrom = Mat4.identity();
     let roadblock_transform = Mat4.identity();
-
-    if (Math.random() > 0.8 && (Math.floor(program_state.animation_time) % 5 === 0) && (this.Z_POS - this.prev_Z_POS !== 0)) {
+    if (Math.random() > 0.8 && (Math.floor(program_state.animation_time) % 5 === 0)
+           && (this.Z_POS - this.prev_Z_POS !== 0) && (this.obstacles[this.obstacles.length-1][2][3] - this.car[2][3] > -15)) {
+      let side = -0.45;
+      if (Math.random() > 0.5){
+        side = 0.45;
+      }
       if (this.obstacles.length > 0){
-        console.log(this.obstacles[this.obstacles.length -1][2][2])
         roadblock_transform = roadblock_transform
       .times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE))
-      .times(Mat4.translation(0, 1/RB_SCALE, (-10 + this.obstacles[this.obstacles.length -1][2][2])/RB_SCALE));
+      .times(Mat4.translation(side*RB_SCALE, 1/RB_SCALE, (-40 + this.obstacles[this.obstacles.length -1][2][3])/RB_SCALE));
       } 
       else{ 
         roadblock_transform = roadblock_transform
         .times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE))
-        .times(Mat4.translation(0, 1/RB_SCALE, (-10 + this.Z_POS)/RB_SCALE));
+        .times(Mat4.translation(side*RB_SCALE, 1/RB_SCALE, (-20 + this.Z_POS)/RB_SCALE));
       }
-      //.times(Mat4.rotation(Math.PI/4, 0, 1, 0));
-    //this.shapes.roadblock.draw(context, program_state, roadblock_transform, this.materials.roadblock_color);
     this.obstacles.push(roadblock_transform);
     }
     if (this.obstacles.length > 0){
@@ -478,7 +434,7 @@ export class Environment extends Scene {
     )
     // draw the ground
     ground_transform = ground_transform
-      .times(Mat4.translation(0, 0, this.Z_POS))
+      .times(Mat4.translation(0, 0, this.Z_POS*C_SCALE))
       .times(Mat4.rotation(Math.PI / 2, 1, 0, 0))
       .times(Mat4.scale(G_SCALE, G_SCALE, G_SCALE));
       
