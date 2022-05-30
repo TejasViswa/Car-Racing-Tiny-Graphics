@@ -18,121 +18,215 @@ const {
   Texture,
 } = tiny
 
-const { Square, Subdivision_Sphere, Torus, Axis_Arrows, Closed_Cone, Rounded_Capped_Cylinder, Textured_Phong, Cube, Phong_Shader } = defs
-
+const {
+  Square,
+  Subdivision_Sphere,
+  Torus,
+  Axis_Arrows,
+  Closed_Cone,
+  Rounded_Capped_Cylinder,
+  Textured_Phong,
+  Cube,
+  Phong_Shader,
+} = defs
 
 const S_SCALE = 100 // sky scale
 const G_SCALE = 100 // ground scale
 const A_SCALE = 8 // arch scale
 const R_SCALE = 6 // road scale
-const RB_SCALE = 3; // roadblock scale
+const RB_SCALE = 3 // roadblock scale
 const C_SCALE = 2 // car scale
 const FORWARD_MOVE = 0.1
 const BACKWARD_MOVE = 0.1
 const RIGHT_MOVE = 0.1
 const LEFT_MOVE = 0.1
 
-export class Shape_From_File extends Shape {                                   // **Shape_From_File** is a versatile standalone Shape that imports
-                                                                               // all its arrays' data from an .obj 3D model file.
+export class Shape_From_File extends Shape {
+  // **Shape_From_File** is a versatile standalone Shape that imports
+  // all its arrays' data from an .obj 3D model file.
   constructor(filename) {
-    super("position", "normal", "texture_coord");
+    super('position', 'normal', 'texture_coord')
     // Begin downloading the mesh. Once that completes, return
     // control to our parse_into_mesh function.
-    this.load_file(filename);
+    this.load_file(filename)
   }
 
-  load_file(filename) {                             // Request the external file and wait for it to load.
+  load_file(filename) {
+    // Request the external file and wait for it to load.
     // Failure mode:  Loads an empty shape.
     return fetch(filename)
-        .then(response => {
-          if (response.ok) return Promise.resolve(response.text())
-          else return Promise.reject(response.status)
-        })
-        .then(obj_file_contents => this.parse_into_mesh(obj_file_contents))
-        .catch(error => {
-          this.copy_onto_graphics_card(this.gl);
-        })
+      .then((response) => {
+        if (response.ok) return Promise.resolve(response.text())
+        else return Promise.reject(response.status)
+      })
+      .then((obj_file_contents) => this.parse_into_mesh(obj_file_contents))
+      .catch((error) => {
+        this.copy_onto_graphics_card(this.gl)
+      })
   }
 
-  parse_into_mesh(data) {                           // Adapted from the "webgl-obj-loader.js" library found online:
-    var verts = [], vertNormals = [], textures = [], unpacked = {};
+  parse_into_mesh(data) {
+    // Adapted from the "webgl-obj-loader.js" library found online:
+    var verts = [],
+      vertNormals = [],
+      textures = [],
+      unpacked = {}
 
-    unpacked.verts = [];
-    unpacked.norms = [];
-    unpacked.textures = [];
-    unpacked.hashindices = {};
-    unpacked.indices = [];
-    unpacked.index = 0;
+    unpacked.verts = []
+    unpacked.norms = []
+    unpacked.textures = []
+    unpacked.hashindices = {}
+    unpacked.indices = []
+    unpacked.index = 0
 
-    var lines = data.split('\n');
+    var lines = data.split('\n')
 
-    var VERTEX_RE = /^v\s/;
-    var NORMAL_RE = /^vn\s/;
-    var TEXTURE_RE = /^vt\s/;
-    var FACE_RE = /^f\s/;
-    var WHITESPACE_RE = /\s+/;
+    var VERTEX_RE = /^v\s/
+    var NORMAL_RE = /^vn\s/
+    var TEXTURE_RE = /^vt\s/
+    var FACE_RE = /^f\s/
+    var WHITESPACE_RE = /\s+/
 
     for (var i = 0; i < lines.length; i++) {
-      var line = lines[i].trim();
-      var elements = line.split(WHITESPACE_RE);
-      elements.shift();
+      var line = lines[i].trim()
+      var elements = line.split(WHITESPACE_RE)
+      elements.shift()
 
-      if (VERTEX_RE.test(line)) verts.push.apply(verts, elements);
-      else if (NORMAL_RE.test(line)) vertNormals.push.apply(vertNormals, elements);
-      else if (TEXTURE_RE.test(line)) textures.push.apply(textures, elements);
+      if (VERTEX_RE.test(line)) verts.push.apply(verts, elements)
+      else if (NORMAL_RE.test(line))
+        vertNormals.push.apply(vertNormals, elements)
+      else if (TEXTURE_RE.test(line)) textures.push.apply(textures, elements)
       else if (FACE_RE.test(line)) {
-        var quad = false;
+        var quad = false
         for (var j = 0, eleLen = elements.length; j < eleLen; j++) {
           if (j === 3 && !quad) {
-            j = 2;
-            quad = true;
+            j = 2
+            quad = true
           }
           if (elements[j] in unpacked.hashindices)
-            unpacked.indices.push(unpacked.hashindices[elements[j]]);
+            unpacked.indices.push(unpacked.hashindices[elements[j]])
           else {
-            var vertex = elements[j].split('/');
+            var vertex = elements[j].split('/')
 
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 0]);
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 1]);
-            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 2]);
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 0])
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 1])
+            unpacked.verts.push(+verts[(vertex[0] - 1) * 3 + 2])
 
             if (textures.length) {
-              unpacked.textures.push(+textures[((vertex[1] - 1) || vertex[0]) * 2 + 0]);
-              unpacked.textures.push(+textures[((vertex[1] - 1) || vertex[0]) * 2 + 1]);
+              unpacked.textures.push(
+                +textures[(vertex[1] - 1 || vertex[0]) * 2 + 0]
+              )
+              unpacked.textures.push(
+                +textures[(vertex[1] - 1 || vertex[0]) * 2 + 1]
+              )
             }
 
-            unpacked.norms.push(+vertNormals[((vertex[2] - 1) || vertex[0]) * 3 + 0]);
-            unpacked.norms.push(+vertNormals[((vertex[2] - 1) || vertex[0]) * 3 + 1]);
-            unpacked.norms.push(+vertNormals[((vertex[2] - 1) || vertex[0]) * 3 + 2]);
+            unpacked.norms.push(
+              +vertNormals[(vertex[2] - 1 || vertex[0]) * 3 + 0]
+            )
+            unpacked.norms.push(
+              +vertNormals[(vertex[2] - 1 || vertex[0]) * 3 + 1]
+            )
+            unpacked.norms.push(
+              +vertNormals[(vertex[2] - 1 || vertex[0]) * 3 + 2]
+            )
 
-            unpacked.hashindices[elements[j]] = unpacked.index;
-            unpacked.indices.push(unpacked.index);
-            unpacked.index += 1;
+            unpacked.hashindices[elements[j]] = unpacked.index
+            unpacked.indices.push(unpacked.index)
+            unpacked.index += 1
           }
-          if (j === 3 && quad) unpacked.indices.push(unpacked.hashindices[elements[0]]);
+          if (j === 3 && quad)
+            unpacked.indices.push(unpacked.hashindices[elements[0]])
         }
       }
     }
     {
-      const {verts, norms, textures} = unpacked;
+      const { verts, norms, textures } = unpacked
       for (var j = 0; j < verts.length / 3; j++) {
-        this.arrays.position.push(vec3(verts[3 * j], verts[3 * j + 1], verts[3 * j + 2]));
-        this.arrays.normal.push(vec3(norms[3 * j], norms[3 * j + 1], norms[3 * j + 2]));
-        this.arrays.texture_coord.push(vec(textures[2 * j], textures[2 * j + 1]));
+        this.arrays.position.push(
+          vec3(verts[3 * j], verts[3 * j + 1], verts[3 * j + 2])
+        )
+        this.arrays.normal.push(
+          vec3(norms[3 * j], norms[3 * j + 1], norms[3 * j + 2])
+        )
+        this.arrays.texture_coord.push(
+          vec(textures[2 * j], textures[2 * j + 1])
+        )
       }
-      this.indices = unpacked.indices;
+      this.indices = unpacked.indices
     }
-    this.normalize_positions(false);
-    this.ready = true;
+    this.normalize_positions(false)
+    this.ready = true
   }
 
-  draw(context, program_state, model_transform, material) {               // draw(): Same as always for shapes, but cancel all
+  draw(context, program_state, model_transform, material) {
+    // draw(): Same as always for shapes, but cancel all
     // attempts to draw the shape before it loads:
     if (this.ready)
-      super.draw(context, program_state, model_transform, material);
+      super.draw(context, program_state, model_transform, material)
   }
 }
 
+// COLLISION DETECTION CLASS
+export class Body {
+  // **Body** can store and update the properties of a 3D body that incrementally
+  // moves from its previous place due to velocities.  It conforms to the
+  // approach outlined in the "Fix Your Timestep!" blog post by Glenn Fiedler.
+  constructor(shape, material, size) {
+    Object.assign(this, { shape, material, size })
+  }
+
+  // (within some margin of distance).
+  static intersect_cube(p, margin = 0) {
+    return p.every((value) => value >= -1 - margin && value <= 1 + margin)
+  }
+
+  static intersect_sphere(p, margin = 0) {
+    return p.dot(p) < 1 + margin
+  }
+
+  emplace(
+    location_matrix,
+    linear_velocity,
+    angular_velocity,
+    spin_axis = vec3(0, 0, 0).randomized(1).normalized()
+  ) {
+    // emplace(): assign the body's initial values, or overwrite them.
+    this.center = location_matrix.times(vec4(0, 0, 0, 1)).to3()
+    this.rotation = Mat4.translation(...this.center.times(-1)).times(
+      location_matrix
+    )
+    this.previous = {
+      center: this.center.copy(),
+      rotation: this.rotation.copy(),
+    }
+    // drawn_location gets replaced with an interpolated quantity:
+    this.drawn_location = location_matrix
+    this.temp_matrix = Mat4.identity()
+    return Object.assign(this, { linear_velocity, angular_velocity, spin_axis })
+  }
+
+  check_if_colliding(b, collider) {
+    // check_if_colliding(): Collision detection function.
+    // DISCLAIMER:  The collision method shown below is not used by anyone; it's just very quick
+    // to code.  Making every collision body an ellipsoid is kind of a hack, and looping
+    // through a list of discrete sphere points to see if the ellipsoids intersect is *really* a
+    // hack (there are perfectly good analytic expressions that can test if two ellipsoids
+    // intersect without discretizing them into points).
+    if (this == b) return false
+    // Nothing collides with itself.
+    // Convert sphere b to the frame where a is a unit sphere:
+    const T = this.inverse.times(b.drawn_location, this.temp_matrix)
+
+    const { intersect_test, points, leeway } = collider
+    // For each vertex in that b, shift to the coordinate frame of
+    // a_inv*b.  Check if in that coordinate frame it penetrates
+    // the unit sphere at the origin.  Leave some leeway.
+    return points.arrays.position.some((p) =>
+      intersect_test(T.times(p.to4(1)).to3(), leeway)
+    )
+  }
+}
 
 export class Environment extends Scene {
   /**
@@ -154,16 +248,16 @@ export class Environment extends Scene {
       cylinder: new Rounded_Capped_Cylinder(10, 10),
       cone: new Closed_Cone(10, 10),
 
-      body: new Shape_From_File("assets/body.obj"),
-      fenders: new Shape_From_File("assets/fenders.obj"),
-      carlights: new Shape_From_File("assets/lights.obj"),
-      rear_front: new Shape_From_File("assets/rear_front.obj"),
-      wheels: new Shape_From_File("assets/wheels.obj"),
+      body: new Shape_From_File('assets/body.obj'),
+      fenders: new Shape_From_File('assets/fenders.obj'),
+      carlights: new Shape_From_File('assets/lights.obj'),
+      rear_front: new Shape_From_File('assets/rear_front.obj'),
+      wheels: new Shape_From_File('assets/wheels.obj'),
 
-      roadblock: new Shape_From_File("assets/roadblock.obj"),
+      roadblock: new Shape_From_File('assets/roadblock.obj'),
     }
 
-    this.prev_z = -90;
+    this.prev_z = -90
     // TODO:  Create the materials required to texture both cubes with the correct images and settings.
     //        Make each Material from the correct shader.  Phong_Shader will work initially, but when
     //        you get to requirements 6 and 7 you will need different ones.
@@ -223,8 +317,8 @@ export class Environment extends Scene {
         color: hex_color('#0080ff'),
       }),
       roadblock_color: new Material(new Textured_Phong(), {
-        color: hex_color("#2F4F4F"),
-      })
+        color: hex_color('#2F4F4F'),
+      }),
     }
 
     this.initial_camera_location = Mat4.look_at(
@@ -233,50 +327,79 @@ export class Environment extends Scene {
       vec3(0, 1, 0)
     )
 
-    this.X_POS = 0;
-    this.prev_X_POS = 0;
-    this.Y_POS = 0;
-    this.prev_Y_POS = 0;
-    this.Z_POS = 0;
-    this.prev_Z_POS = 0;
-    this.car_speed = 0;
-    this.prev_car_speed = 0;
-    this.car_acc = 0;
-    this.t = 0;
-    this.prev_t = 0;
-    this.rev = false;
+    this.X_POS = 0
+    this.prev_X_POS = 0
+    this.Y_POS = 0
+    this.prev_Y_POS = 0
+    this.Z_POS = 0
+    this.prev_Z_POS = 0
+    this.car_speed = 0
+    this.prev_car_speed = 0
+    this.car_acc = 0
+    this.t = 0
+    this.prev_t = 0
+    this.rev = false
 
-    this.obstacles = [Mat4.identity().times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE)).times(Mat4.translation(-0.45*RB_SCALE, 1/RB_SCALE, -23))];
+    this.obstacles = [
+      Mat4.identity()
+        .times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE))
+        .times(Mat4.translation(-0.45 * RB_SCALE, 1 / RB_SCALE, -23)),
+    ]
+    this.bodies = [
+      new Body(this.shapes.roadblock, undefined, vec3(1, 1, 1)).emplace(
+        this.obstacles[0].times(Mat4.scale(1, 0.3, 0.15)),
+        vec3(0, 0, 0),
+        0
+      ),
+    ]
+
+    // colliders specifies how to detect collisions between bodies
+    this.colliders = [
+      {
+        intersect_test: Body.intersect_sphere,
+        points: new defs.Subdivision_Sphere(1),
+        leeway: 0.5,
+      },
+      {
+        intersect_test: Body.intersect_sphere,
+        points: new defs.Subdivision_Sphere(2),
+        leeway: 0.3,
+      },
+      {
+        intersect_test: Body.intersect_cube,
+        points: new defs.Cube(),
+        leeway: 0.1,
+      },
+    ]
+    this.collider_selection = 2
   }
-
 
   move_forward() {
     //this.X_POS += 1;
     //this.Z_POS -= FORWARD_MOVE;
-    this.car_acc = 1;
+    this.car_acc = 1
   }
   move_backward() {
     //this.X_POS -= 1;
     //this.Z_POS += BACKWARD_MOVE;
-    this.car_acc = -0.1;
-    this.rev = true;
+    this.car_acc = -0.1
+    this.rev = true
   }
-  default_acc(){
+  default_acc() {
     //this.t = 0;
-    this.car_acc = 0;
-    this.rev = false;
+    this.car_acc = 0
+    this.rev = false
   }
   move_right() {
     //this.Y_POS += 1;
-    this.X_POS += RIGHT_MOVE;
+    this.X_POS += RIGHT_MOVE
   }
   move_left() {
     //this.Y_POS -= 1;
-    this.X_POS -= LEFT_MOVE;
-
+    this.X_POS -= LEFT_MOVE
   }
 
-  movement(t){
+  movement(t) {
     // if (this.t === 0 && this.car_acc !== 0){
     //   this.prev_t = t;
     //   //this.t = t;
@@ -293,45 +416,55 @@ export class Environment extends Scene {
     //this.car_speed = this.prev_car_speed + this.car_acc * this.t;
     //let dist = 0.5*(this.car_speed + this.prev_car_speed);
     //this.Z_POS = this.prev_Z_POS - dist;
-    if (this.car_acc>0){
-      this.car_speed+=0.01;
-    }
-    else if(this.car_acc<0){
-      this.car_speed-=0.01;
-    }
-    else{
-      if(this.rev===false) {
-        if(this.car_speed>0)
-          this.car_speed -= 0.1;
-        else
-          this.car_speed = 0;
-      }
-      else {
-        if(this.car_speed>0)
-          this.car_speed += 0.1;
-        else
-          this.car_speed = 0;
+    if (this.car_acc > 0) {
+      this.car_speed += 0.01
+    } else if (this.car_acc < 0) {
+      this.car_speed -= 0.01
+    } else {
+      if (this.rev === false) {
+        if (this.car_speed > 0) this.car_speed -= 0.1
+        else this.car_speed = 0
+      } else {
+        if (this.car_speed > 0) this.car_speed += 0.1
+        else this.car_speed = 0
       }
     }
-    if(this.car_speed<-0.5)
-      this.car_speed = -0.5;
-    if(this.car_speed>0.5)
-      this.car_speed = 0.5;
-    this.prev_Z_POS = this.Z_POS;
-    this.Z_POS -= 0.5*this.car_speed;
+    if (this.car_speed < -0.5) this.car_speed = -0.5
+    if (this.car_speed > 0.5) this.car_speed = 0.5
+    this.prev_Z_POS = this.Z_POS
+    this.Z_POS -= 0.5 * this.car_speed
   }
-
 
   make_control_panel() {
     // Add neccesary controls to make the game work
-    this.key_triggered_button("World view", ["Control", "0"], () => this.attached = () => null);
-    this.new_line();
-    this.key_triggered_button("Car view", ["Control", "1"], () => this.attached = () => this.car);
-    this.new_line();
-    this.key_triggered_button("Move Forward", ["u"], this.move_forward,'#6E6460', this.default_acc);
-    this.key_triggered_button("Move Backward", ["j"], this.move_backward,'#6E6460', this.default_acc);
-    this.key_triggered_button("Move Right", ["k"], this.move_right);
-    this.key_triggered_button("Move Left", ["h"], this.move_left);
+    this.key_triggered_button(
+      'World view',
+      ['Control', '0'],
+      () => (this.attached = () => null)
+    )
+    this.new_line()
+    this.key_triggered_button(
+      'Car view',
+      ['Control', '1'],
+      () => (this.attached = () => this.car)
+    )
+    this.new_line()
+    this.key_triggered_button(
+      'Move Forward',
+      ['u'],
+      this.move_forward,
+      '#6E6460',
+      this.default_acc
+    )
+    this.key_triggered_button(
+      'Move Backward',
+      ['j'],
+      this.move_backward,
+      '#6E6460',
+      this.default_acc
+    )
+    this.key_triggered_button('Move Right', ['k'], this.move_right)
+    this.key_triggered_button('Move Left', ['h'], this.move_left)
   }
 
   display(context, program_state) {
@@ -344,11 +477,13 @@ export class Environment extends Scene {
     }
 
     if (this.attached !== undefined) {
-      let desired = this.initial_camera_location;
+      let desired = this.initial_camera_location
       if (this.attached() !== null)
-        desired = Mat4.inverse(this.attached().times(Mat4.translation(0, 0, 5)));
-      desired = desired.map((x,i) => Vector.from(program_state.camera_inverse[i]).mix(x, 0.1));
-      program_state.set_camera(desired);
+        desired = Mat4.inverse(this.attached().times(Mat4.translation(0, 0, 5)))
+      desired = desired.map((x, i) =>
+        Vector.from(program_state.camera_inverse[i]).mix(x, 0.1)
+      )
+      program_state.set_camera(desired)
     }
 
     program_state.projection_transform = Mat4.perspective(
@@ -357,20 +492,19 @@ export class Environment extends Scene {
       1,
       100
     )
-    
 
-    const light_position = vec4(10, 10, 10, 1);
-    program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)];
+    const light_position = vec4(10, 10, 10, 1)
+    program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)]
 
     let t = program_state.animation_time / 1000,
       dt = program_state.animation_delta_time / 1000
-    let sky_transform = Mat4.identity();
-    let ground_transform = Mat4.identity();
-    let arch_transform = Mat4.identity();
-    let road_transform = Mat4.identity();
-    let arrow_transform = Mat4.identity();
-    let car_transform = Mat4.identity();
-    
+    let sky_transform = Mat4.identity()
+    let ground_transform = Mat4.identity()
+    let arch_transform = Mat4.identity()
+    let road_transform = Mat4.identity()
+    let arrow_transform = Mat4.identity()
+    let car_transform = Mat4.identity()
+
     /* arrow_transform = arrow_transform.times(Mat4.translation(0, 3, 75));
     arrow_transform = arrow_transform.times(Mat4.scale(1, 1, C_SCALE));
     this.shapes.cylinder.draw(context, program_state, arrow_transform, this.materials.sky);
@@ -393,39 +527,16 @@ export class Environment extends Scene {
         this.positional_offset = Mat4.translation(0, 0, this.prev_z + dz);
         //console.log(this.prev_z + dz);
     } */
-    
-    let wheel_transform = Mat4.identity();
-    let fender_transform = Mat4.identity();
-    let carlight_trasform = Mat4.identity();
-    let rear_front_transfrom = Mat4.identity();
-    let roadblock_transform = Mat4.identity();
-    if (Math.random() > 0.8 && (Math.floor(program_state.animation_time) % 5 === 0)
-           && (this.Z_POS - this.prev_Z_POS !== 0) && (this.obstacles[this.obstacles.length-1][2][3] - this.car[2][3] > -15)) {
-      let side = -0.45;
-      if (Math.random() > 0.5){
-        side = 0.45;
-      }
-      if (this.obstacles.length > 0){
-        roadblock_transform = roadblock_transform
-      .times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE))
-      .times(Mat4.translation(side*RB_SCALE, 1/RB_SCALE, (-40 + this.obstacles[this.obstacles.length -1][2][3])/RB_SCALE));
-      } 
-      else{ 
-        roadblock_transform = roadblock_transform
-        .times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE))
-        .times(Mat4.translation(side*RB_SCALE, 1/RB_SCALE, (-20 + this.Z_POS)/RB_SCALE));
-      }
-    this.obstacles.push(roadblock_transform);
-    }
-    if (this.obstacles.length > 0){
-      this.obstacles.forEach(element => {
-        this.shapes.roadblock.draw(context, program_state, element, this.materials.roadblock_color);
-      });
-    }
-    
+
+    let wheel_transform = Mat4.identity()
+    let fender_transform = Mat4.identity()
+    let carlight_trasform = Mat4.identity()
+    let rear_front_transfrom = Mat4.identity()
+
     // draw the sky
-    sky_transform = sky_transform.times(Mat4.scale(S_SCALE, S_SCALE, S_SCALE))
-      .times(Mat4.translation(0, 0, this.Z_POS*C_SCALE/S_SCALE));
+    sky_transform = sky_transform
+      .times(Mat4.scale(S_SCALE, S_SCALE, S_SCALE))
+      .times(Mat4.translation(0, 0, (this.Z_POS * C_SCALE) / S_SCALE))
     this.shapes.sphere.draw(
       context,
       program_state,
@@ -434,10 +545,10 @@ export class Environment extends Scene {
     )
     // draw the ground
     ground_transform = ground_transform
-      .times(Mat4.translation(0, 0, this.Z_POS*C_SCALE))
+      .times(Mat4.translation(0, 0, this.Z_POS * C_SCALE))
       .times(Mat4.rotation(Math.PI / 2, 1, 0, 0))
-      .times(Mat4.scale(G_SCALE, G_SCALE, G_SCALE));
-      
+      .times(Mat4.scale(G_SCALE, G_SCALE, G_SCALE))
+
     this.shapes.square.draw(
       context,
       program_state,
@@ -449,8 +560,8 @@ export class Environment extends Scene {
     road_transform = road_transform
       .times(Mat4.translation(0, 0.1, 90))
       .times(Mat4.rotation(Math.PI / 2, 1, 0, 0))
-      .times(Mat4.scale(R_SCALE, R_SCALE, R_SCALE));
-    for (let i = 0; i < Math.floor((Math.abs(this.Z_POS)+20)); i++) {
+      .times(Mat4.scale(R_SCALE, R_SCALE, R_SCALE))
+    for (let i = 0; i < Math.floor(Math.abs(this.Z_POS) + 20); i++) {
       this.shapes.square.draw(
         context,
         program_state,
@@ -463,8 +574,8 @@ export class Environment extends Scene {
     // draw the arches
     arch_transform = arch_transform
       .times(Mat4.translation(0, 0, 100))
-      .times(Mat4.scale(A_SCALE, A_SCALE, A_SCALE*0.5))
-    for (let i = 0; i < 10; i++) {
+      .times(Mat4.scale(A_SCALE, A_SCALE, A_SCALE * 0.5))
+    for (let i = 0; i < 3; i++) {
       arch_transform = arch_transform.times(Mat4.translation(0, 0, -2))
       this.shapes.torus.draw(
         context,
@@ -473,33 +584,176 @@ export class Environment extends Scene {
         this.materials.stars
       )
     }
-    arch_transform = arch_transform.times(Mat4.translation(0, 5, 0));
-    this.shapes.cylinder.draw(context, program_state, arch_transform, this.materials.stars);
-
-
+    arch_transform = arch_transform.times(Mat4.translation(0, 5, 0))
+    this.shapes.cylinder.draw(
+      context,
+      program_state,
+      arch_transform,
+      this.materials.stars
+    )
 
     // draw the car
-    this.movement(program_state.animation_time / 1000);
-    car_transform = car_transform.times(Mat4.scale(C_SCALE, C_SCALE, C_SCALE))
-        .times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+    this.movement(program_state.animation_time / 1000)
+    car_transform = car_transform
+      .times(Mat4.scale(C_SCALE, C_SCALE, C_SCALE))
+      .times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
 
+    car_transform = car_transform
+      .times(Mat4.rotation(Math.PI / 8, 0, 1, 0))
+      .times(Mat4.translation(0, 0.6, 0))
 
-    car_transform = car_transform.times(Mat4.rotation(Math.PI / 8, 0, 1, 0.0)).times(Mat4.translation(0, 0.6, 0))
+    wheel_transform = car_transform.times(Mat4.translation(0, -0.4, 0))
+    rear_front_transfrom = car_transform.times(
+      Mat4.translation(0, -0.25, -0.02)
+    ) //.times(Mat4.rotation(Math.PI / 25, 0, 0, 0))
+    fender_transform = car_transform
+      .times(Mat4.translation(0.5, -0.2, -1.15))
+      .times(Mat4.scale(0.2, 0.2, 0.2))
+    carlight_trasform = car_transform
+      .times(Mat4.translation(-0.02, 0, 0.1))
+      .times(Mat4.scale(1.325, 1.4, 1.325))
 
-    wheel_transform = car_transform.times(Mat4.translation(0, -0.4, 0 ))
-    rear_front_transfrom = car_transform.times(Mat4.translation(0, -0.25, -0.02 ))//.times(Mat4.rotation(Math.PI / 25, 0, 0, 0))
-    fender_transform = car_transform.times(Mat4.translation(0.5, -0.2, -1.15 )).times(Mat4.scale(0.2, 0.2, 0.2))
-    carlight_trasform = car_transform.times(Mat4.translation(-0.02, 0, 0.1 )).times(Mat4.scale(1.325, 1.4, 1.325))
+    this.shapes.body.draw(
+      context,
+      program_state,
+      car_transform,
+      this.materials.body_color
+    )
+    this.shapes.wheels.draw(
+      context,
+      program_state,
+      wheel_transform,
+      this.materials.tyre_color
+    )
+    this.shapes.fenders.draw(
+      context,
+      program_state,
+      fender_transform,
+      this.materials.fender_color
+    )
+    this.shapes.carlights.draw(
+      context,
+      program_state,
+      carlight_trasform,
+      this.materials.carlight_color
+    )
+    this.shapes.rear_front.draw(
+      context,
+      program_state,
+      rear_front_transfrom,
+      this.materials.rear_front_color
+    )
 
-    this.shapes.body.draw(context, program_state, car_transform, this.materials.body_color);
-    this.shapes.wheels.draw(context, program_state, wheel_transform, this.materials.tyre_color);
-    this.shapes.fenders.draw(context, program_state, fender_transform, this.materials.fender_color);
-    this.shapes.carlights.draw(context, program_state, carlight_trasform, this.materials.carlight_color);
-    this.shapes.rear_front.draw(context, program_state, rear_front_transfrom, this.materials.rear_front_color);
+    this.car = car_transform.times(Mat4.translation(0, 0.4, 0))
 
+    this.generate_obstacles(program_state)
+    // draw obstacles
+    this.obstacles.forEach((element) => {
+      this.shapes.roadblock.draw(
+        context,
+        program_state,
+        element,
+        this.materials.roadblock_color
+      )
+    })
+    // Draw an extra bounding box around each drawn shape to show
+    // the physical shape that is really being collided with:
+    const { points, leeway } = this.colliders[this.collider_selection]
+    // const size = vec3(1 + leeway, 1 + leeway, 1 + leeway)
+    for (let b of this.bodies)
+      points.draw(
+        context,
+        program_state,
+        b.drawn_location,
+        this.materials.sky,
+        'LINE_STRIP'
+      )
 
+    // create a body for the car
+    const car_body = new Body(
+      this.shapes.body,
+      undefined,
+      vec3(1, 1, 1)
+    ).emplace(
+      this.car.times(Mat4.rotation(-Math.PI / 8, 0, 1, 0)),
+      vec3(0, 0, 0),
+      0
+    )
+    car_body.inverse = Mat4.inverse(car_body.drawn_location)
+    // draw bounding box for car
+    points.draw(
+      context,
+      program_state,
+      car_body.drawn_location,
+      this.materials.sky,
+      'LINE_STRIP'
+    )
+    this.check_collision(car_body)
+  }
 
-    this.car = car_transform.times(Mat4.translation(0, 0.4, 0));
+  generate_obstacles(program_state) {
+    let roadblock_transform = Mat4.identity()
+    if (
+      Math.random() > 0.8 &&
+      Math.floor(program_state.animation_time) % 5 === 0 &&
+      this.Z_POS - this.prev_Z_POS !== 0 &&
+      this.obstacles[this.obstacles.length - 1][2][3] - this.car[2][3] > -15
+    ) {
+      let side = -0.45
+      if (Math.random() > 0.5) {
+        side = 0.45
+      }
+      if (this.obstacles.length > 0) {
+        roadblock_transform = roadblock_transform
+          .times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE))
+          .times(
+            Mat4.translation(
+              side * RB_SCALE,
+              1 / RB_SCALE,
+              (-40 + this.obstacles[this.obstacles.length - 1][2][3]) / RB_SCALE
+            )
+          )
+      } else {
+        roadblock_transform = roadblock_transform
+          .times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE))
+          .times(
+            Mat4.translation(
+              side * RB_SCALE,
+              1 / RB_SCALE,
+              (-20 + this.Z_POS) / RB_SCALE
+            )
+          )
+      }
+      this.obstacles.push(roadblock_transform)
+      // represent an obstacle as a body
+      console.log(this.bodies.length)
+      this.bodies.push(
+        new Body(this.shapes.roadblock, undefined, vec3(1, 1, 1)).emplace(
+          roadblock_transform.times(Mat4.scale(1, 0.3, 0.15)),
+          vec3(0, 0, 0),
+          0
+        )
+      )
+    }
+  }
 
+  check_collision(body) {
+    // check if body is colliding with anybody in this.bodies
+
+    const collider = this.colliders[this.collider_selection]
+    // Loop through all bodies (call each "a"):
+    for (let a of this.bodies) {
+      // Cache the inverse of matrix of body "a" to save time.
+      a.inverse = Mat4.inverse(a.drawn_location)
+
+      // if (a.linear_velocity.norm() == 0) continue
+      // *** Collision process is here ***
+      if (!body.check_if_colliding(a, collider)) continue
+      // If we get here, we collided, so turn red and zero out the
+      // velocity so they don't inter-penetrate any further.
+      // a.linear_velocity = vec3(0, 0, 0)
+      // a.angular_velocity = 0
+      console.log('Collision detected')
+    }
   }
 }
