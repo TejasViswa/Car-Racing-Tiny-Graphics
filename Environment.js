@@ -675,7 +675,9 @@ export class Environment extends Scene {
       undefined,
       vec3(1, 1, 1)
     ).emplace(
-      this.car.times(Mat4.rotation(-Math.PI / 8, 0, 1, 0)),
+      this.car
+        .times(Mat4.rotation(-Math.PI / 8, 0, 1, 0))
+        .times(Mat4.scale(0.6, 1, 1)),
       vec3(0, 0, 0),
       0
     )
@@ -697,6 +699,7 @@ export class Environment extends Scene {
       Math.random() > 0.8 &&
       Math.floor(program_state.animation_time) % 5 === 0 &&
       this.Z_POS - this.prev_Z_POS !== 0 &&
+      this.obstacles.length > 0 &&
       this.obstacles[this.obstacles.length - 1][2][3] - this.car[2][3] > -15
     ) {
       let side = -0.45
@@ -726,7 +729,6 @@ export class Environment extends Scene {
       }
       this.obstacles.push(roadblock_transform)
       // represent an obstacle as a body
-      console.log(this.bodies.length)
       this.bodies.push(
         new Body(this.shapes.roadblock, undefined, vec3(1, 1, 1)).emplace(
           roadblock_transform.times(Mat4.scale(1, 0.3, 0.15)),
@@ -749,10 +751,16 @@ export class Environment extends Scene {
       // if (a.linear_velocity.norm() == 0) continue
       // *** Collision process is here ***
       if (!body.check_if_colliding(a, collider)) continue
-      // If we get here, we collided, so turn red and zero out the
-      // velocity so they don't inter-penetrate any further.
-      // a.linear_velocity = vec3(0, 0, 0)
-      // a.angular_velocity = 0
+      // If we get here, we collided
+      const idx = this.bodies.indexOf(a)
+      // remove the obstacle
+      if (idx > -1) {
+        this.bodies.splice(idx, 1)
+        this.obstacles.splice(idx, 1)
+      }
+      // stop the car
+      this.car_acc = 0
+      this.car_speed = 0
       console.log('Collision detected')
     }
   }
