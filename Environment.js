@@ -236,39 +236,30 @@ export class Environment extends Scene {
     this.prev_Z_POS = 0;
     this.car_speed = 0;
     this.prev_car_speed = 0;
-    this.car_acc = 0;
+    this.car_acc = 0.01;
+    this.car_acc_dir = 0;
     this.t = 0;
     this.prev_t = 0;
-    this.rev = false;
-    this.right = false;
-    this.left = false;
     this.car_yaw = 0;
-    this.angle_inc = Math.PI/180;
+    this.angle_inc = 3*(Math.PI/180);
+    this.car_turn = 0; // 1 for right and -1 for left and 0 for straight or reverse
     this.car_pitch = 0;
-    this.car_roll = 0
+    this.car_roll = 0;
+    this.car_speed_limit = 0.8;
     this.car_transform = Mat4.identity();
     this.car_transform = this.car_transform.times(Mat4.scale(C_SCALE, C_SCALE, C_SCALE));
     this.car_transform = this.car_transform.times(Mat4.translation(0, 0, 30));
   }
 
-
+z
   move_forward() {
-    //this.X_POS += 1;
-    //this.Z_POS -= FORWARD_MOVE;
-    this.car_acc = 1;
+    this.car_acc_dir = 1;
   }
   move_backward() {
-    //this.X_POS -= 1;
-    //this.Z_POS += BACKWARD_MOVE;
-    this.car_acc = -0.1;
-    this.rev = true;
+    this.car_acc_dir = -1;
   }
   default_acc(){
-    //this.t = 0;
-    this.car_acc = 0;
-    this.rev = false;
-    this.right = false;
-    this.left = false;
+    this.car_acc_dir = 0;
     this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
         .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
     this.Z_POS = 0;
@@ -277,8 +268,7 @@ export class Environment extends Scene {
     this.car_yaw = 0;
   }
   default_turn(){
-    this.right = false;
-    this.left = false;
+    this.car_turn = 0;
     this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
         .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
     this.Z_POS = 0;
@@ -287,171 +277,51 @@ export class Environment extends Scene {
     this.car_yaw = 0;
   }
   move_right() {
-    //this.Y_POS += 1;
-    //this.X_POS += RIGHT_MOVE;
-    this.right = true;
-    this.left = false;
+    this.car_turn = 1;
   }
   move_left() {
-    //this.Y_POS -= 1;
-    //this.X_POS -= LEFT_MOVE;
-    this.left = true;
-    this.right = false;
+    this.car_turn = -1;
   }
 
   movement(t){
-    // if (this.t === 0 && this.car_acc !== 0){
-    //   this.prev_t = t;
-    //   //this.t = t;
-    // }
-    // this.t = t - this.prev_t;
-    // if(this.car_acc===0 ) {
-    //   this.prev_car_speed = this.car_speed;
-    // }
-    // if(this.car_speed===0){
-    //   this.prev_Z_POS = this.Z_POS;
-    //   this.prev_X_POS = this.X_POS;
-    //   this.prev_Y_POS = this.Y_POS;
-    // }
-    //this.car_speed = this.prev_car_speed + this.car_acc * this.t;
-    //let dist = 0.5*(this.car_speed + this.prev_car_speed);
-    //this.Z_POS = this.prev_Z_POS - dist;
-    if (this.car_acc>0){
-      this.car_speed+=0.01;
-      if (this.right===true) {
-        this.car_yaw -= this.angle_inc;
-        this.X_POS += 0.1*this.car_speed;
-        this.car_speed-=0.005;
-      }
-      else if (this.left===true) {
-        this.car_yaw += this.angle_inc;
-        // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
-        //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
-        // this.Z_POS = 0;
-        this.X_POS -= 0.1*this.car_speed;
-        this.car_speed-=0.005;
+
+    // When moving forward or backward
+    if(this.car_acc_dir!==0){
+      this.car_speed+=(this.car_acc*this.car_acc_dir);
+      if(this.car_turn!==0){
+        this.car_yaw -= (this.angle_inc*this.car_turn); // right if this.car_turn is 1 or left if this.car_turn is -1
+        this.X_POS += (this.angle_inc*this.car_turn); // right if this.car_turn is 1 or left if this.car_turn is -1
+       // this.car_speed-=(0.005*this.car_acc_dir);
       }
     }
-    else if(this.car_acc<0){
-      this.car_speed-=0.01;
-      if (this.right===true) {
-        this.car_yaw -= this.angle_inc;
-        // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
-        //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
-        // this.Z_POS = 0;
-        this.X_POS += 0.1*this.car_speed;
-        this.car_speed+=0.005;
-      }
-      else if (this.left===true) {
-        this.car_yaw += this.angle_inc;
-        // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
-        //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
-        // this.Z_POS = 0;
-        this.X_POS -= 0.1*this.car_speed;
-        this.car_speed+=0.005;
-      }
-    }
-    else{
-      if(this.rev===false) {
-        if(this.car_speed>0) {
+    // When nothing is pressed
+    else {
+        if (this.car_speed > 0.05) {
           this.car_speed -= 0.1;
-          if (this.right===true) {
-            this.car_yaw -= this.angle_inc;
-            // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
-            //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
-            // this.Z_POS = 0;
-            this.X_POS += 0.1*this.car_speed;
-            this.car_speed+=0.005;
-          }
-          else if (this.left===true) {
-            this.car_yaw += this.angle_inc;
-            // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
-            //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
-            // this.Z_POS = 0;
-            this.X_POS -= 0.1*this.car_speed;
-            this.car_speed+=0.005;
-          }
         }
-        else
-          this.car_speed = 0;
-      }
-      else {
-        if(this.car_speed>0) {
+        else if (this.car_speed < -0.05){
           this.car_speed += 0.1;
-          if (this.right===true) {
-            this.car_yaw -= this.angle_inc;
-            // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
-            //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
-            // this.Z_POS = 0;
-            this.X_POS += 0.1*this.car_speed;
-            this.car_speed-=0.005;
-          }
-          else if (this.left===true) {
-            this.car_yaw += this.angle_inc;
-            // this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
-            //     .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
-            // this.Z_POS = 0;
-            this.X_POS -= 0.1*this.car_speed;
-            this.car_speed-=0.005;
-          }
         }
-        else
+        else {
           this.car_speed = 0;
-      }
+        }
     }
-    if(this.car_speed<-0.5)
-      this.car_speed = -0.5;
-    if(this.car_speed>0.5)
-      this.car_speed = 0.5;
+    // Speed saturation
+    if(this.car_speed<-this.car_speed_limit)
+      this.car_speed = -this.car_speed_limit;
+    if(this.car_speed>this.car_speed_limit)
+      this.car_speed = this.car_speed_limit;
+    // Actual car displacement
+    this.Z_POS -= this.car_speed;
 
-    this.Z_POS -= 0.5*this.car_speed;
-
-
+    this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+        .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
+    this.Z_POS = 0;
+    this.X_POS = 0;
+    this.Y_POS = 0;
+    this.car_yaw = 0;
   }
 
-  // movement(t){
-  //   // if (this.t === 0 && this.car_acc !== 0){
-  //   //   this.prev_t = t;
-  //   //   //this.t = t;
-  //   // }
-  //   // this.t = t - this.prev_t;
-  //   // if(this.car_acc===0 ) {
-  //   //   this.prev_car_speed = this.car_speed;
-  //   // }
-  //   // if(this.car_speed===0){
-  //   //   this.prev_Z_POS = this.Z_POS;
-  //   //   this.prev_X_POS = this.X_POS;
-  //   //   this.prev_Y_POS = this.Y_POS;
-  //   // }
-  //   //this.car_speed = this.prev_car_speed + this.car_acc * this.t;
-  //   //let dist = 0.5*(this.car_speed + this.prev_car_speed);
-  //   //this.Z_POS = this.prev_Z_POS - dist;
-  //   if (this.car_acc>0){
-  //     this.car_speed+=0.01;
-  //   }
-  //   else if(this.car_acc<0){
-  //     this.car_speed-=0.01;
-  //   }
-  //   else{
-  //     if(this.rev===false) {
-  //       if(this.car_speed>0)
-  //         this.car_speed -= 0.1;
-  //       else
-  //         this.car_speed = 0;
-  //     }
-  //     else {
-  //       if(this.car_speed>0)
-  //         this.car_speed += 0.1;
-  //       else
-  //         this.car_speed = 0;
-  //     }
-  //   }
-  //   if(this.car_speed<-0.5)
-  //     this.car_speed = -0.5;
-  //   if(this.car_speed>0.5)
-  //     this.car_speed = 0.5;
-  //   this.Z_POS -= 0.5*this.car_speed;
-  // }
 
 
   make_control_panel() {
@@ -462,8 +332,8 @@ export class Environment extends Scene {
     this.new_line();
     this.key_triggered_button("Move Forward", ["u"], this.move_forward,'#6E6460', this.default_acc);
     this.key_triggered_button("Move Backward", ["j"], this.move_backward,'#6E6460', this.default_acc);
-    this.key_triggered_button("Move Right", ["k"], this.move_right, this.default_turn);
-    this.key_triggered_button("Move Left", ["h"], this.move_left,  this.default_turn);
+    this.key_triggered_button("Move Right", ["k"], this.move_right,'#6E6460', this.default_turn);
+    this.key_triggered_button("Move Left", ["h"], this.move_left, '#6E6460', this.default_turn);
   }
 
   display(context, program_state) {
