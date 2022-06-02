@@ -649,8 +649,6 @@ export class Environment extends Scene {
 
     this.car = car_transform.times(Mat4.translation(0, 0.8, 0)).times(Mat4.rotation( Math.PI / 8, 0, -1, 0.0));
 
-
-
     this.generate_obstacles(program_state)
     // draw obstacles
     this.obstacles.forEach((element) => {
