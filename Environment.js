@@ -337,25 +337,27 @@ export class Environment extends Scene {
     this.prev_Z_POS = 0;
     this.car_speed = 0;
     this.prev_car_speed = 0;
-    this.car_acc = 0.01;
+    this.car_acc = 0.02;
     this.car_acc_dir = 0;
     this.t = 0;
     this.prev_t = 0;
     this.car_yaw = 0;
-    this.angle_inc = 3*(Math.PI/180);
+    this.angle_inc = 2*(Math.PI/180);
     this.car_turn = 0; // 1 for right and -1 for left and 0 for straight or reverse
     this.car_pitch = 0;
     this.car_roll = 0;
-    this.car_speed_limit = 0.8;
+    this.car_speed_limit = 5;
     this.car_transform = Mat4.identity();
     this.car_transform = this.car_transform.times(Mat4.scale(C_SCALE, C_SCALE, C_SCALE));
     this.car_transform = this.car_transform.times(Mat4.translation(0, 0, 30));
     this.audio = new Audio('assets/car-ignition-1.mp3');
-    this.audio.volume = 0.025;
+    this.audio.volume = 0.1;
     this.car_acc_audio = new Audio('assets/Car (M3 Acceleration).mp3');
-    this.car_acc_audio.volume = 0.025;
+    this.car_acc_audio.volume = 0.1;
     this.car_rev_audio = new Audio('assets/car reverse.mp3');
-    this.car_rev_audio.volume = 0.1;
+    this.car_rev_audio.volume = 0.3;
+    this.car_nitro_audio = new Audio('assets/Nitrous Burst Sound Effect.mp3');
+    this.car_nitro_audio.volume = 0.15;
     this.audio.play();
     this.car_Z_POS = 60;
     this.car_prev_Z_POS = 60;
@@ -419,10 +421,12 @@ export class Environment extends Scene {
   default_acc(){
     this.attached = () => this.car;
     this.car_acc_dir = 0;
+
     this.car_acc_audio.pause();
     this.car_acc_audio.currentTime=0;
     this.car_rev_audio.pause();
     this.car_rev_audio.currentTime=0;
+
     this.audio.currentTime=4;
     this.audio.play();
     this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
@@ -431,6 +435,12 @@ export class Environment extends Scene {
     this.X_POS = 0;
     this.Y_POS = 0;
     this.car_yaw = 0;
+  }
+  default_nitro(){
+    this.car_acc = 0.02;
+    this.car_speed_limit = 5;
+    this.car_nitro_audio.pause();
+    this.car_nitro_audio.currentTime=0;
   }
   default_turn(){
     this.car_turn = 0;
@@ -447,7 +457,11 @@ export class Environment extends Scene {
   move_left() {
     this.car_turn = -1;
   }
-
+  nitro() {
+    this.car_acc = 0.05;
+    this.car_speed_limit = 8;
+    this.car_nitro_audio.play();
+  }
   movement(t){
 
     // audio loop
@@ -513,6 +527,7 @@ export class Environment extends Scene {
     this.key_triggered_button("Move Backward", ["j"], this.move_backward,'#6E6460', this.default_acc);
     this.key_triggered_button("Move Right", ["k"], this.move_right,'#6E6460', this.default_turn);
     this.key_triggered_button("Move Left", ["h"], this.move_left,'#6E6460',  this.default_turn);
+    this.key_triggered_button("Nitro", ["n"], this.nitro,'#0000FF', this.default_nitro);
   }
 
   display(context, program_state) {
@@ -529,7 +544,7 @@ export class Environment extends Scene {
       if (this.attached() !== null)
         desired = Mat4.inverse(this.attached().times(Mat4.translation(0, 0, 5)))
       desired = desired.map((x, i) =>
-        Vector.from(program_state.camera_inverse[i]).mix(x, 0.5)
+        Vector.from(program_state.camera_inverse[i]).mix(x, 1)
       )
       program_state.set_camera(desired)
     }
@@ -659,8 +674,14 @@ export class Environment extends Scene {
     this.shapes.carlights.draw(context, program_state, carlight_trasform, this.materials.carlight_color);
     this.shapes.rear_front.draw(context, program_state, rear_front_transfrom, this.materials.rear_front_color);
 
-    this.car = car_transform.times(Mat4.translation(0, 0.8, 0)).times(Mat4.rotation( Math.PI / 8, 0, -1, 0.0));
-    this.car_rev = this.car.times(Mat4.rotation( Math.PI , 0, -1, 0.0));
+    this.car = car_transform.times(Mat4.translation(0, 1, 0))
+        .times(Mat4.rotation( Math.PI / 8, 0, -1, 0.0))
+    this.car_rev = this.car.times(Mat4.translation(0, 0, -1)).times(Mat4.rotation( Math.PI , 0, -1, 0.0));
+    //this.car_rev = this.car.times(Mat4.rotation( Math.PI , 0, -1, 0.0));
+    this.car = this.car.times(Mat4.rotation( Math.PI / 12, -1, 0, 0))
+
+
+
 
 
     this.generate_obstacles(program_state)
