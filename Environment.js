@@ -350,11 +350,11 @@ export class Environment extends Scene {
     this.car_transform = this.car_transform.times(Mat4.scale(C_SCALE, C_SCALE, C_SCALE));
     this.car_transform = this.car_transform.times(Mat4.translation(0, 0, 30));
     this.audio = new Audio('assets/car-ignition-1.mp3');
-    this.audio.volume = 0.2;
+    this.audio.volume = 0.025;
     this.car_acc_audio = new Audio('assets/Car (M3 Acceleration).mp3');
-    this.car_acc_audio.volume = 0.2;
+    this.car_acc_audio.volume = 0.025;
     this.car_rev_audio = new Audio('assets/car reverse.mp3');
-    this.car_rev_audio.volume = 0.2;
+    this.car_rev_audio.volume = 0.1;
     this.audio.play();
 
     this.obstacles = [
@@ -392,6 +392,7 @@ export class Environment extends Scene {
   }
 
   move_forward() {
+    this.attached = () => this.car;
     this.car_acc_dir = 1;
     this.audio.pause();
     this.audio.currentTime=0;
@@ -403,6 +404,7 @@ export class Environment extends Scene {
     this.car_rev_audio.currentTime=0;
   }
   move_backward() {
+    this.attached = () => this.car_rev;
     this.car_acc_dir = -1;
     this.car_acc_audio.pause();
     this.audio.currentTime=0;
@@ -412,6 +414,7 @@ export class Environment extends Scene {
     this.car_rev_audio.play();
   }
   default_acc(){
+    this.attached = () => this.car;
     this.car_acc_dir = 0;
     this.car_acc_audio.pause();
     this.car_acc_audio.currentTime=0;
@@ -444,14 +447,21 @@ export class Environment extends Scene {
 
   movement(t){
 
-    // if(this.car_acc_audio.currentTime===16) {
-    //   this.car_acc_audio.pause();
-    //   this.car_acc_audio.currentTime = 12;
-    //   this.car_acc_audio.play();
-    // }
+    // audio loop
+    if(this.car_acc_audio.currentTime>22) {
+      this.car_acc_audio.pause();
+      this.car_acc_audio.currentTime = 17;
+      this.car_acc_audio.play();
+    }
+    if(this.car_rev_audio.currentTime>10) {
+      this.car_rev_audio.pause();
+      this.car_rev_audio.currentTime = 3;
+      this.car_rev_audio.play();
+    }
 
     // When moving forward or backward
     if(this.car_acc_dir!==0){
+
       this.car_speed+=(this.car_acc*this.car_acc_dir);
       if(this.car_turn!==0){
         this.car_yaw -= (this.angle_inc*this.car_turn); // right if this.car_turn is 1 or left if this.car_turn is -1
@@ -493,6 +503,8 @@ export class Environment extends Scene {
     this.key_triggered_button("World view", ["Control", "0"], () => this.attached = () => null);
     this.new_line();
     this.key_triggered_button("Car view", ["Control", "1"], () => this.attached = () => this.car);
+    this.new_line();
+    this.key_triggered_button("Car Reverse view", ["Control", "2"], () => this.attached = () => this.car_rev);
     this.new_line();
     this.key_triggered_button("Move Forward", ["u"], this.move_forward,'#6E6460', this.default_acc);
     this.key_triggered_button("Move Backward", ["j"], this.move_backward,'#6E6460', this.default_acc);
@@ -643,7 +655,7 @@ export class Environment extends Scene {
     this.shapes.rear_front.draw(context, program_state, rear_front_transfrom, this.materials.rear_front_color);
 
     this.car = car_transform.times(Mat4.translation(0, 0.8, 0)).times(Mat4.rotation( Math.PI / 8, 0, -1, 0.0));
-
+    this.car_rev = this.car.times(Mat4.rotation( Math.PI , 0, -1, 0.0));
 
 
     this.generate_obstacles(program_state)
