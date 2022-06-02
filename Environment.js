@@ -44,6 +44,47 @@ const Collision = {
   intact: 0,
   collided: 1,
 }
+export class Text_Line extends Shape {                           // **Text_Line** embeds text in the 3D world, using a crude texture
+                                                                 // method.  This Shape is made of a horizontal arrangement of quads.
+                                                                 // Each is textured over with images of ASCII characters, spelling
+                                                                 // out a string.  Usage:  Instantiate the Shape with the desired
+                                                                 // character line width.  Then assign it a single-line string by calling
+                                                                 // set_string("your string") on it. Draw the shape on a material
+                                                                 // with full ambient weight, and text.png assigned as its texture
+                                                                 // file.  For multi-line strings, repeat this process and draw with
+                                                                 // a different matrix.
+  constructor(max_size) {
+    super("position", "normal", "texture_coord");
+    this.max_size = max_size;
+    var object_transform = Mat4.identity();
+    for (var i = 0; i < max_size; i++) {                                       // Each quad is a separate Square instance:
+      defs.Square.insert_transformed_copy_into(this, [], object_transform);
+      object_transform.post_multiply(Mat4.translation(1.5, 0, 0));
+    }
+  }
+
+  set_string(line, context) {           // set_string():  Call this to overwrite the texture coordinates buffer with new
+    // values per quad, which enclose each of the string's characters.
+    this.arrays.texture_coord = [];
+    for (var i = 0; i < this.max_size; i++) {
+      var row = Math.floor((i < line.length ? line.charCodeAt(i) : ' '.charCodeAt()) / 16),
+          col = Math.floor((i < line.length ? line.charCodeAt(i) : ' '.charCodeAt()) % 16);
+
+      var skip = 3, size = 32, sizefloor = size - skip;
+      var dim = size * 16,
+          left = (col * size + skip) / dim, top = (row * size + skip) / dim,
+          right = (col * size + sizefloor) / dim, bottom = (row * size + sizefloor + 5) / dim;
+
+      this.arrays.texture_coord.push(...Vector.cast([left, 1 - bottom], [right, 1 - bottom],
+          [left, 1 - top], [right, 1 - top]));
+    }
+    if (!this.existing) {
+      this.copy_onto_graphics_card(context);
+      this.existing = true;
+    } else
+      this.copy_onto_graphics_card(context, ["texture_coord"], false);
+  }
+}
 
 export class Shape_From_File extends Shape {
   // **Shape_From_File** is a versatile standalone Shape that imports
@@ -259,6 +300,7 @@ export class Environment extends Scene {
       wheels: new Shape_From_File('assets/wheels.obj'),
 
       roadblock: new Shape_From_File('assets/roadblock.obj'),
+      text: new Text_Line(35),
     }
 
     this.prev_z = -90
@@ -323,6 +365,10 @@ export class Environment extends Scene {
       roadblock_color: new Material(new Textured_Phong(), {
         color: hex_color('#2F4F4F'),
       }),
+      text_image: new Material(new Textured_Phong(), {
+        ambient: 1, diffusivity: 0, specularity: 0,
+        texture: new Texture("assets/text.png")
+      }),
     }
 
     this.initial_camera_location = Mat4.look_at(
@@ -365,6 +411,7 @@ export class Environment extends Scene {
     this.audio.play()
     this.car_Z_POS = 60
     this.car_prev_Z_POS = 60
+    this.current_camera_pos =  null;
 
     this.obstacles = [
       Mat4.identity()
@@ -578,12 +625,16 @@ export class Environment extends Scene {
   }
 
   display(context, program_state) {
+
+
     if (!context.scratchpad.controls) {
       this.children.push(
         (context.scratchpad.controls = new defs.Movement_Controls())
       )
       // Define the global camera and projection matrices, which are stored in program_state.
+
       program_state.set_camera(Mat4.translation(0, -1, -90))
+      this.current_camera_pos = program_state.camera_transform;
     }
 
     if (this.attached !== undefined) {
@@ -593,7 +644,9 @@ export class Environment extends Scene {
       desired = desired.map((x, i) =>
         Vector.from(program_state.camera_inverse[i]).mix(x, 1)
       )
-      program_state.set_camera(desired)
+
+      program_state.set_camera(desired);
+      this.current_camera_pos = program_state.camera_transform;
     }
 
     program_state.projection_transform = Mat4.perspective(
@@ -607,7 +660,7 @@ export class Environment extends Scene {
     program_state.lights = [new Light(light_position, color(1, 1, 1, 1), 1000)]
 
     let t = program_state.animation_time / 1000,
-      dt = program_state.animation_delta_time / 1000
+        dt = program_state.animation_delta_time / 1000
     let sky_transform = Mat4.identity()
     let ground_transform = Mat4.identity()
     let arch_transform = Mat4.identity()
@@ -615,6 +668,9 @@ export class Environment extends Scene {
     let arrow_transform = Mat4.identity()
     let car_transform = Mat4.identity()
 
+    this.shapes.text.set_string(t.toString(), context.context);
+    this.shapes.text.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(-1, -1, -3))
+        .times(Mat4.scale(.3, .3, .3)), this.materials.text_image);
     /* arrow_transform = arrow_transform.times(Mat4.translation(0, 3, 75));
     arrow_transform = arrow_transform.times(Mat4.scale(1, 1, C_SCALE));
     this.shapes.cylinder.draw(context, program_state, arrow_transform, this.materials.sky);
@@ -758,11 +814,13 @@ export class Environment extends Scene {
     this.car = car_transform
       .times(Mat4.translation(0, 1, 0))
       .times(Mat4.rotation(Math.PI / 8, 0, -1, 0.0))
+
     this.car_rev = this.car
       .times(Mat4.translation(0, 0, -1))
       .times(Mat4.rotation(Math.PI, 0, -1, 0.0))
     //this.car_rev = this.car.times(Mat4.rotation( Math.PI , 0, -1, 0.0));
     this.car = this.car.times(Mat4.rotation(Math.PI / 12, -1, 0, 0))
+
 
     this.generate_obstacles(program_state)
     // draw obstacles
