@@ -326,8 +326,9 @@ export class Environment extends Scene {
       vec3(0, 10, 20),
       vec3(0, 0, 0),
       vec3(0, 1, 0)
-    )
+    );
 
+    
     this.X_POS = 0;
     this.prev_X_POS = 0;
     this.Y_POS = 0;
@@ -356,6 +357,8 @@ export class Environment extends Scene {
     this.car_rev_audio = new Audio('assets/car reverse.mp3');
     this.car_rev_audio.volume = 0.1;
     this.audio.play();
+    this.car_Z_POS = 60;
+    this.car_prev_Z_POS = 60;
 
     this.obstacles = [
       Mat4.identity()
@@ -458,7 +461,6 @@ export class Environment extends Scene {
       this.car_rev_audio.currentTime = 3;
       this.car_rev_audio.play();
     }
-
     // When moving forward or backward
     if(this.car_acc_dir!==0){
 
@@ -482,13 +484,14 @@ export class Environment extends Scene {
       }
     }
     // Speed saturation
+    
     if(this.car_speed<-this.car_speed_limit)
       this.car_speed = -this.car_speed_limit;
     if(this.car_speed>this.car_speed_limit)
       this.car_speed = this.car_speed_limit;
     // Actual car displacement
     this.Z_POS -= this.car_speed;
-
+    
     this.car_transform = this.car_transform.times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
         .times(Mat4.rotation(this.car_yaw, 0, 1, 0));
     this.Z_POS = 0;
@@ -572,7 +575,9 @@ export class Environment extends Scene {
         this.positional_offset = Mat4.translation(0, 0, this.prev_z + dz);
         //console.log(this.prev_z + dz);
     } */
-
+    this.car_prev_Z_POS = this.car_Z_POS;
+    let current_Z_POS = this.car_transform[2][3];
+    this.car_Z_POS = current_Z_POS;
     let wheel_transform = Mat4.identity()
     let fender_transform = Mat4.identity()
     let carlight_trasform = Mat4.identity()
@@ -581,7 +586,7 @@ export class Environment extends Scene {
     // draw the sky
     sky_transform = sky_transform
       .times(Mat4.scale(S_SCALE, S_SCALE, S_SCALE))
-      .times(Mat4.translation(0, 0, (this.Z_POS * C_SCALE) / S_SCALE))
+      .times(Mat4.translation(0, 0, ((current_Z_POS)) / S_SCALE))
     this.shapes.sphere.draw(
       context,
       program_state,
@@ -590,7 +595,7 @@ export class Environment extends Scene {
     )
     // draw the ground
     ground_transform = ground_transform
-      .times(Mat4.translation(0, 0, this.Z_POS * C_SCALE))
+      .times(Mat4.translation(0, 0, current_Z_POS))
       .times(Mat4.rotation(Math.PI / 2, 1, 0, 0))
       .times(Mat4.scale(G_SCALE, G_SCALE, G_SCALE))
 
@@ -606,7 +611,7 @@ export class Environment extends Scene {
       .times(Mat4.translation(0, 0.1, 90))
       .times(Mat4.rotation(Math.PI / 2, 1, 0, 0))
       .times(Mat4.scale(R_SCALE, R_SCALE, R_SCALE))
-    for (let i = 0; i < Math.floor(Math.abs(this.Z_POS) + 20); i++) {
+    for (let i = 0; i < Math.floor(Math.abs(current_Z_POS) + 20); i++) {
       this.shapes.square.draw(
         context,
         program_state,
@@ -710,7 +715,7 @@ export class Environment extends Scene {
     if (
       Math.random() > 0.8 &&
       Math.floor(program_state.animation_time) % 5 === 0 &&
-      this.Z_POS - this.prev_Z_POS !== 0 &&
+      this.car_Z_POS - this.car_prev_Z_POS !== 0 &&
       this.obstacles.length > 0 &&
       this.obstacles[this.obstacles.length - 1][2][3] - this.car[2][3] > -15
     ) {
