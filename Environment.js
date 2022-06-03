@@ -425,7 +425,7 @@ export class Environment extends Scene {
       vec3(0, 0, 0),
       vec3(0, 1, 0)
     )
-
+    this.won = 0
     this.end_time = 0
     this.game_timer = 60
     this.no_of_collision = 0
@@ -581,7 +581,7 @@ export class Environment extends Scene {
     else {
       if(this.time_offset===-1)
         this.time_offset = t;
-      if(this.game_status === 1){
+      if(this.game_status === 1 || this.won === 1){
         this.shapes.text.set_string((this.end_time).toFixed(2).toString(), context.context);
       }
       else {
@@ -786,6 +786,9 @@ export class Environment extends Scene {
     }
     if(t - this.time_offset>this.game_timer && this.no_of_collision <3){
       this.shapes.text.set_string("You Won!!!", context.context);
+      this.won = 1
+      this.end_time = this.game_timer
+
       this.shapes.text.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(-1, 0.25, -3))
           .times(Mat4.scale(.2, .2, .2)), this.materials.start_text);
       console.log('Game Won')
