@@ -289,6 +289,8 @@ export class Environment extends Scene {
     this.shapes = {
       sphere: new Subdivision_Sphere(4),
       square: new Square(),
+      fire_screen: new Square(),
+      fire_cube: new Cube(),
       torus: new Torus(6, 15),
       axis: new Axis_Arrows(),
       cylinder: new Rounded_Capped_Cylinder(10, 10),
@@ -400,6 +402,14 @@ export class Environment extends Scene {
         texture: new Texture("assets/speedometer.png")
       }),
 
+      texture_flame: new Material(new Fire_Effect(), {
+        color: color(0, 0, 0, 1),
+        ambient: 1,
+        texture: new Texture("assets/flame_1.png", "NEAREST")
+      }),
+
+
+
       pointer : new Material(new Textured_Phong(), {
         color: color(0, 0, 0, 1),
         ambient: 0.5,
@@ -416,6 +426,10 @@ export class Environment extends Scene {
       vec3(0, 1, 0)
     )
 
+    this.end_time = 0
+    this.game_timer = 60
+    this.no_of_collision = 0
+    this.game_status = 0
     this.X_POS = 0
     this.prev_X_POS = 0
     this.Y_POS = 0
@@ -567,7 +581,12 @@ export class Environment extends Scene {
     else {
       if(this.time_offset===-1)
         this.time_offset = t;
-      this.shapes.text.set_string((t-this.time_offset).toFixed(2).toString(), context.context);
+      if(this.game_status === 1){
+        this.shapes.text.set_string((this.end_time).toFixed(2).toString(), context.context);
+      }
+      else {
+        this.shapes.text.set_string((t - this.time_offset).toFixed(2).toString(), context.context);
+      }
       this.shapes.text.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(-2, -1, -3))
           .times(Mat4.scale(.2, .2, .2)), this.materials.text_image);
       this.shapes.square.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(1.5, -0.7, -3))
@@ -576,6 +595,10 @@ export class Environment extends Scene {
           .times(Mat4.scale(0.8, 0.8, 0.8)).times(Mat4.rotation(Math.PI + Math.PI / 4 + Math.PI / 8 - this.car_speed * ((7 * Math.PI) / (4 * 8)), 0, 0, 1)), this.materials.pointer);
     }
   }
+
+
+
+
   movement(t) {
     // audio loop
     if (this.car_acc_audio.currentTime > 22) {
@@ -616,13 +639,25 @@ export class Environment extends Scene {
     // Actual car displacement
     this.Z_POS -= this.car_speed
 
-    this.car_transform = this.car_transform
-      .times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
-      .times(Mat4.rotation(this.car_yaw, 0, 1, 0))
-    this.Z_POS = 0
-    this.X_POS = 0
-    this.Y_POS = 0
-    this.car_yaw = 0
+    if( this.game_status == 0){
+      this.car_transform = this.car_transform
+          .times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+          .times(Mat4.rotation(this.car_yaw, 0, 1, 0))
+      this.Z_POS = 0
+      this.X_POS = 0
+      this.Y_POS = 0
+      this.car_yaw = 0
+    }
+    else{
+      this.Z_POS = 0
+      this.X_POS = 0
+      this.Y_POS = 0
+      this.car_yaw = 0
+      this.car_transform = this.car_transform
+          .times(Mat4.translation(this.X_POS, this.Y_POS, this.Z_POS))
+          .times(Mat4.rotation(this.car_yaw, 0, 1, 0))
+
+    }
   }
 
   make_control_panel() {
@@ -739,6 +774,20 @@ export class Environment extends Scene {
 
 
     this.start_game(t, context, program_state);
+
+    if(this.no_of_collision>=3){
+      this.game_status = 1
+      // this.shapes.cube.draw(context, program_state, this.car.times(Mat4.translation(0, 0, 15)), this.materials.fender_color)
+      this.shapes.fire_screen.draw(context, program_state, this.car, this.materials.texture_flame)
+      this.shapes.text.set_string("Wasted", context.context);
+      this.shapes.text.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(-0.75, 0.75, -3))
+          .times(Mat4.scale(.2, .2, .2)), this.materials.start_text);
+      console.log('Game Over')
+    }
+    if(t - this.time_offset>this.game_timer && this.no_of_collision <3){
+      this.game_status = 1
+      console.log('Game Won')
+    }
     /* arrow_transform = arrow_transform.times(Mat4.translation(0, 3, 75));
     arrow_transform = arrow_transform.times(Mat4.scale(1, 1, C_SCALE));
     this.shapes.cylinder.draw(context, program_state, arrow_transform, this.materials.sky);
@@ -774,61 +823,64 @@ export class Environment extends Scene {
     sky_transform = sky_transform
       .times(Mat4.scale(S_SCALE, S_SCALE, S_SCALE))
       .times(Mat4.translation(0, 0, current_Z_POS / S_SCALE))
-    this.shapes.sphere.draw(
-      context,
-      program_state,
-      sky_transform,
-      this.materials.sky
-    )
-    // draw the ground
-    ground_transform = ground_transform
-      .times(Mat4.translation(0, 0, current_Z_POS))
-      .times(Mat4.rotation(Math.PI / 2, 1, 0, 0))
-      .times(Mat4.scale(G_SCALE, G_SCALE, G_SCALE))
 
-    this.shapes.square.draw(
-      context,
-      program_state,
-      ground_transform,
-      this.materials.grass
-    )
 
-    // draw the road
-    road_transform = road_transform
-      .times(Mat4.translation(0, 0.1, 90))
-      .times(Mat4.rotation(Math.PI / 2, 1, 0, 0))
-      .times(Mat4.scale(R_SCALE, R_SCALE, R_SCALE))
-    for (let i = 0; i < Math.floor(Math.abs(current_Z_POS) + 20); i++) {
+    if(this.game_status === 0) {
+      this.shapes.sphere.draw(
+          context,
+          program_state,
+          sky_transform,
+          this.materials.sky
+      )
+      // draw the ground
+      ground_transform = ground_transform
+          .times(Mat4.translation(0, 0, current_Z_POS))
+          .times(Mat4.rotation(Math.PI / 2, 1, 0, 0))
+          .times(Mat4.scale(G_SCALE, G_SCALE, G_SCALE))
+
       this.shapes.square.draw(
-        context,
-        program_state,
-        road_transform,
-        this.materials.road
+          context,
+          program_state,
+          ground_transform,
+          this.materials.grass
       )
-      road_transform = road_transform.times(Mat4.translation(0, -2, 0))
-    }
 
-    // draw the arches
-    arch_transform = arch_transform
-      .times(Mat4.translation(0, 0, 100))
-      .times(Mat4.scale(A_SCALE, A_SCALE, A_SCALE * 0.5))
-    for (let i = 0; i < 3; i++) {
-      arch_transform = arch_transform.times(Mat4.translation(0, 0, -2))
-      this.shapes.torus.draw(
-        context,
-        program_state,
-        arch_transform,
-        this.materials.stars
+      // draw the road
+      road_transform = road_transform
+          .times(Mat4.translation(0, 0.1, 90))
+          .times(Mat4.rotation(Math.PI / 2, 1, 0, 0))
+          .times(Mat4.scale(R_SCALE, R_SCALE, R_SCALE))
+      for (let i = 0; i < Math.floor(Math.abs(current_Z_POS) + 20); i++) {
+        this.shapes.square.draw(
+            context,
+            program_state,
+            road_transform,
+            this.materials.road
+        )
+        road_transform = road_transform.times(Mat4.translation(0, -2, 0))
+      }
+
+      // draw the arches
+      arch_transform = arch_transform
+          .times(Mat4.translation(0, 0, 100))
+          .times(Mat4.scale(A_SCALE, A_SCALE, A_SCALE * 0.5))
+      for (let i = 0; i < 3; i++) {
+        arch_transform = arch_transform.times(Mat4.translation(0, 0, -2))
+        this.shapes.torus.draw(
+            context,
+            program_state,
+            arch_transform,
+            this.materials.stars
+        )
+      }
+      arch_transform = arch_transform.times(Mat4.translation(0, 5, 0))
+      this.shapes.cylinder.draw(
+          context,
+          program_state,
+          arch_transform,
+          this.materials.stars
       )
     }
-    arch_transform = arch_transform.times(Mat4.translation(0, 5, 0))
-    this.shapes.cylinder.draw(
-      context,
-      program_state,
-      arch_transform,
-      this.materials.stars
-    )
-
     // draw the car
     this.movement(program_state.animation_time / 1000)
     car_transform = this.car_transform
@@ -930,35 +982,38 @@ export class Environment extends Scene {
         )
     }
 
-    // create a body for the car
-    const car_body = new Body(
-      this.shapes.body,
-      undefined,
-      vec3(1, 1, 1)
-    ).emplace(
-      this.car
-        .times(Mat4.rotation(-Math.PI / 8, 0, 1, 0))
-        .times(Mat4.scale(0.6, 1, 1)),
-      vec3(0, 0, 0),
-      0
-    )
-    car_body.inverse = Mat4.inverse(car_body.drawn_location)
-    // draw bounding box for car
-    points.draw(
-      context,
-      program_state,
-      car_body.drawn_location,
-      this.materials.sky,
-      'LINE_STRIP'
-    )
-    this.check_collision(car_body)
+
+    if(this.game_status === 0) {
+      // create a body for the car
+      const car_body = new Body(
+          this.shapes.body,
+          undefined,
+          vec3(1, 1, 1)
+      ).emplace(
+          this.car
+              .times(Mat4.rotation(-Math.PI / 8, 0, 1, 0))
+              .times(Mat4.scale(0.6, 1, 1)),
+          vec3(0, 0, 0),
+          0
+      )
+      car_body.inverse = Mat4.inverse(car_body.drawn_location)
+      // draw bounding box for car
+      points.draw(
+          context,
+          program_state,
+          car_body.drawn_location,
+          this.materials.sky,
+          'LINE_STRIP'
+      )
+      this.check_collision(car_body, t)
+    }
   }
 
   generate_obstacles(program_state) {
     let roadblock_transform = Mat4.identity()
     let boulder_transform = Mat4.identity()
-    console.log(this.obstacles[this.obstacles.length - 1][0][2][3] - this.car[2][3])
-    console.log(this.obstacles.length)
+    // console.log(this.obstacles[this.obstacles.length - 1][0][2][3] - this.car[2][3])
+    // console.log(this.obstacles.length)
     if (
       (Math.random() > 0.8 &&
       Math.floor(program_state.animation_time) % 5 === 0 &&
@@ -1013,7 +1068,7 @@ export class Environment extends Scene {
     }
   }
 
-  check_collision(body) {
+  check_collision(body, t) {
     // check if body is colliding with anybody in this.bodies
 
     const collider = this.colliders[this.collider_selection]
@@ -1036,9 +1091,62 @@ export class Environment extends Scene {
       // stop the car
       this.default_acc()
       this.car_speed = 0
+      this.no_of_collision +=1
+      if(this.no_of_collision === 3){
+        this.end_time = t
+      }
       console.log('Collision detected')
+      console.log(this.no_of_collision)
+
     }
   }
 }
 
+
+class Fire_Effect extends Textured_Phong {
+  // TODO:  Modify the shader below (right now it's just the same fragment shader as Textured_Phong) for requirement #6.
+  fragment_glsl_code() {
+    return this.shared_glsl_code() + `
+            varying vec2 f_tex_coord;
+            uniform sampler2D texture;
+            uniform float animation_time;
+
+            
+            void main(){
+                // Sample the texture image in the correct place:
+
+
+                vec2 uv = f_tex_coord;
+                
+                vec2 n0Uv = vec2(uv.x*1.4 + 0.01, uv.y + animation_time*0.69);
+                vec2 n1Uv = vec2(uv.x*0.5 - 0.033, uv.y*2.0 + animation_time*0.12);
+                vec2 n2Uv = vec2(uv.x*0.94 + 0.02, uv.y*3.0 + animation_time*0.61);
+                float n0 = (texture2D(texture, n0Uv).w-0.5)*2.0;
+                float n1 = (texture2D(texture, n1Uv).w-0.5)*2.0;
+                float n2 = (texture2D(texture, n2Uv).w-0.5)*2.0;
+                float noiseA = clamp(n0 + n1 + n2, -1.0, 1.0);
+            
+                // Generate noisy y value
+                vec2 n0UvB = vec2(uv.x*0.7 - 0.01, uv.y + animation_time*0.27);
+                vec2 n1UvB = vec2(uv.x*0.45 + 0.033, uv.y*1.9 + animation_time*0.61);
+                vec2 n2UvB = vec2(uv.x*0.8 - 0.02, uv.y*2.5 + animation_time*0.51);
+                float n0B = (texture2D(texture, n0UvB).w-0.5)*2.0;
+                float n1B = (texture2D(texture, n1UvB).w-0.5)*2.0;
+                float n2B = (texture2D(texture, n2UvB).w-0.5)*2.0;
+                float noiseB = clamp(n0B + n1B + n2B, -1.0, 1.0);
+                
+                vec2 finalNoise = vec2(noiseA, noiseB);
+                float perturb = (1.0 - uv.y) * 0.35 + 0.02;
+                finalNoise = (finalNoise * perturb) + uv - 0.02;
+
+                vec4 color = texture2D(texture, finalNoise);
+                color = vec4(color.x*2.0, color.y*0.9, (color.y/color.x)*0.2, 1.0);
+                finalNoise = clamp(finalNoise, 0.05, 1.0);
+                color.w = texture2D(texture, finalNoise).z*2.0;
+                color.w = color.w*texture2D(texture, uv).z;
+                gl_FragColor = color;
+
+        } `;
+  }
+}
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
