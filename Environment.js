@@ -34,8 +34,8 @@ const S_SCALE = 100 // sky scale
 const G_SCALE = 100 // ground scale
 const A_SCALE = 8 // arch scale
 const R_SCALE = 6 // road scale
-const RB_SCALE = 3; // roadblock scale
-const B_SCALE = 3; // boulder scale
+const RB_SCALE = 3 // roadblock scale
+const B_SCALE = 3 // boulder scale
 const C_SCALE = 2 // car scale
 const FORWARD_MOVE = 0.1
 const BACKWARD_MOVE = 0.1
@@ -259,13 +259,13 @@ export class Environment extends Scene {
       rear_front: new Shape_From_File('assets/rear_front.obj'),
       wheels: new Shape_From_File('assets/wheels.obj'),
 
-      roadblock: new Shape_From_File("assets/roadblock.obj"),
-      boulder: new Shape_From_File("assets/boulder.obj"),
+      roadblock: new Shape_From_File('assets/roadblock.obj'),
+      boulder: new Shape_From_File('assets/boulder.obj'),
     }
 
-    this.prev_z = -90;
+    this.prev_z = -90
 
-    this.car = Mat4.identity();
+    this.car = Mat4.identity()
     // TODO:  Create the materials required to texture both cubes with the correct images and settings.
     //        Make each Material from the correct shader.  Phong_Shader will work initially, but when
     //        you get to requirements 6 and 7 you will need different ones.
@@ -325,11 +325,11 @@ export class Environment extends Scene {
         color: hex_color('#0080ff'),
       }),
       roadblock_color: new Material(new Textured_Phong(), {
-        color: hex_color("#2F4F4F"),
+        color: hex_color('#2F4F4F'),
       }),
       boulder_color: new Material(new Textured_Phong(), {
-        color: hex_color("#964B00"),
-      })
+        color: hex_color('#964B00'),
+      }),
     }
 
     this.initial_camera_location = Mat4.look_at(
@@ -372,11 +372,15 @@ export class Environment extends Scene {
     this.audio.play()
     this.car_Z_POS = 60
     this.car_prev_Z_POS = 60
+    this.hide_hitbox = true
 
     this.obstacles = [
-      [Mat4.identity()
-        .times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE))
-        .times(Mat4.translation(-0.45 * RB_SCALE, 1 / RB_SCALE, -23)), 1],
+      [
+        Mat4.identity()
+          .times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE))
+          .times(Mat4.translation(-0.45 * RB_SCALE, 1 / RB_SCALE, -23)),
+        1,
+      ],
     ]
     this.bodies = [
       [
@@ -582,6 +586,11 @@ export class Environment extends Scene {
       '#0000FF',
       this.default_nitro
     )
+    this.key_triggered_button(
+      'Show/hide hitbox',
+      ['l'],
+      () => (this.hide_hitbox = !this.hide_hitbox)
+    )
   }
 
   display(context, program_state) {
@@ -647,12 +656,12 @@ export class Environment extends Scene {
     this.car_prev_Z_POS = this.car_Z_POS
     let current_Z_POS = this.car_transform[2][3]
     this.car_Z_POS = current_Z_POS
-    
-    let wheel_transform = Mat4.identity();
-    let fender_transform = Mat4.identity();
-    let carlight_trasform = Mat4.identity();
-    let rear_front_transfrom = Mat4.identity();
-    
+
+    let wheel_transform = Mat4.identity()
+    let fender_transform = Mat4.identity()
+    let carlight_trasform = Mat4.identity()
+    let rear_front_transfrom = Mat4.identity()
+
     // draw the sky
     sky_transform = sky_transform
       .times(Mat4.scale(S_SCALE, S_SCALE, S_SCALE))
@@ -776,23 +785,22 @@ export class Environment extends Scene {
     // draw obstacles
     this.obstacles.forEach((element) => {
       const idx = this.obstacles.indexOf(element)
-      if (this.bodies[idx][1] === Collision.intact){
-        if (element[1] === 1){
+      if (this.bodies[idx][1] === Collision.intact) {
+        if (element[1] === 1) {
           this.shapes.roadblock.draw(
             context,
             program_state,
             element[0],
             this.materials.roadblock_color
           )
+        } else {
+          this.shapes.boulder.draw(
+            context,
+            program_state,
+            element[0],
+            this.materials.boulder_color
+          )
         }
-       else{
-        this.shapes.boulder.draw(
-          context,
-          program_state,
-          element[0],
-          this.materials.boulder_color
-        )
-       }
       }
     })
     // Draw an extra bounding box around each drawn shape to show
@@ -801,7 +809,7 @@ export class Environment extends Scene {
     // const size = vec3(1 + leeway, 1 + leeway, 1 + leeway)
     for (let b of this.bodies) {
       const [a, status] = b
-      if (status === Collision.intact)
+      if (!this.hide_hitbox && status === Collision.intact)
         points.draw(
           context,
           program_state,
@@ -825,47 +833,60 @@ export class Environment extends Scene {
     )
     car_body.inverse = Mat4.inverse(car_body.drawn_location)
     // draw bounding box for car
-    points.draw(
-      context,
-      program_state,
-      car_body.drawn_location,
-      this.materials.sky,
-      'LINE_STRIP'
-    )
+    if (!this.hide_hitbox) {
+      points.draw(
+        context,
+        program_state,
+        car_body.drawn_location,
+        this.materials.sky,
+        'LINE_STRIP'
+      )
+    }
     this.check_collision(car_body)
   }
 
   generate_obstacles(program_state) {
     let roadblock_transform = Mat4.identity()
     let boulder_transform = Mat4.identity()
-    console.log(this.obstacles[this.obstacles.length - 1][0][2][3] - this.car[2][3])
+    console.log(
+      this.obstacles[this.obstacles.length - 1][0][2][3] - this.car[2][3]
+    )
     console.log(this.obstacles.length)
     if (
       (Math.random() > 0.8 &&
-      Math.floor(program_state.animation_time) % 5 === 0 &&
-      this.car_Z_POS - this.car_prev_Z_POS !== 0 &&
-      this.car_speed > 0 &&
-      this.obstacles.length > 0 &&
-      this.obstacles[this.obstacles.length - 1][0][2][3] - this.car[2][3] > -15) ||
-      (this.obstacles[this.obstacles.length - 1][0][2][3] - this.car[2][3] > 80)
+        Math.floor(program_state.animation_time) % 5 === 0 &&
+        this.car_Z_POS - this.car_prev_Z_POS !== 0 &&
+        this.car_speed > 0 &&
+        this.obstacles.length > 0 &&
+        this.obstacles[this.obstacles.length - 1][0][2][3] - this.car[2][3] >
+          -15) ||
+      this.obstacles[this.obstacles.length - 1][0][2][3] - this.car[2][3] > 80
     ) {
       let side = -0.45
       if (Math.random() > 0.5) {
         side = 0.45
       }
       // 0 is boulder, 1 is roadblock
-      let obstacle_type = 0;
-      if (Math.random() > 0.5){
-      obstacle_type = 1;
+      let obstacle_type = 0
+      if (Math.random() > 0.5) {
+        obstacle_type = 1
       }
-      if (Math.random() > 0.5){
-      side = 0.45;
+      if (Math.random() > 0.5) {
+        side = 0.45
       }
-      if (obstacle_type === 0){
+      if (obstacle_type === 0) {
         boulder_transform = boulder_transform
           .times(Mat4.scale(B_SCALE, B_SCALE, B_SCALE))
-          .times(Mat4.translation(side*B_SCALE, 1/B_SCALE, (-70*Math.abs(this.car_speed) + this.obstacles[this.obstacles.length -1][0][2][3])/B_SCALE));
-        this.obstacles.push([boulder_transform, obstacle_type]);
+          .times(
+            Mat4.translation(
+              side * B_SCALE,
+              1 / B_SCALE,
+              (-70 * Math.abs(this.car_speed) +
+                this.obstacles[this.obstacles.length - 1][0][2][3]) /
+                B_SCALE
+            )
+          )
+        this.obstacles.push([boulder_transform, obstacle_type])
         // represent an obstacle as a body
         this.bodies.push([
           new Body(this.shapes.boulder, undefined, vec3(1, 1, 1)).emplace(
@@ -875,12 +896,19 @@ export class Environment extends Scene {
           ),
           Collision.intact,
         ])
-      }
-      else{
+      } else {
         roadblock_transform = roadblock_transform
           .times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE))
-          .times(Mat4.translation(side*RB_SCALE, 1/RB_SCALE, (-70*Math.abs(this.car_speed) + this.obstacles[this.obstacles.length -1][0][2][3])/RB_SCALE));
-        this.obstacles.push([roadblock_transform, obstacle_type]);
+          .times(
+            Mat4.translation(
+              side * RB_SCALE,
+              1 / RB_SCALE,
+              (-70 * Math.abs(this.car_speed) +
+                this.obstacles[this.obstacles.length - 1][0][2][3]) /
+                RB_SCALE
+            )
+          )
+        this.obstacles.push([roadblock_transform, obstacle_type])
         // represent an obstacle as a body
         this.bodies.push([
           new Body(this.shapes.roadblock, undefined, vec3(1, 1, 1)).emplace(
