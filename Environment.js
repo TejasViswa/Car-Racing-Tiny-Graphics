@@ -380,7 +380,23 @@ export class Environment extends Scene {
 
       boulder_color: new Material(new Textured_Phong(), {
         color: hex_color("#964B00"),
-      })
+      }),
+
+      speedometer : new Material(new Textured_Phong(), {
+        color: color(0, 0, 0, 1),
+        ambient: 0.5,
+        diffusivity: 0.1,
+        specularity: 0.1,
+        texture: new Texture("assets/speedometer.png")
+      }),
+
+      pointer : new Material(new Textured_Phong(), {
+        color: color(0, 0, 0, 1),
+        ambient: 0.5,
+        diffusivity: 0.1,
+        specularity: 0.1,
+        texture: new Texture("assets/pointer3.png")
+      }),
 
     }
 
@@ -681,9 +697,13 @@ export class Environment extends Scene {
     let arrow_transform = Mat4.identity()
     let car_transform = Mat4.identity()
 
-    this.shapes.text.set_string(t.toString(), context.context);
-    this.shapes.text.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(-1, -1, -3))
-        .times(Mat4.scale(.3, .3, .3)), this.materials.text_image);
+    this.shapes.text.set_string(t.toFixed(2).toString(), context.context);
+    this.shapes.text.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(-2, -1, -3))
+        .times(Mat4.scale(.2, .2, .2)), this.materials.text_image);
+    this.shapes.square.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(1.5, -0.7, -3))
+        .times(Mat4.scale(0.8, 0.8, 0.8)), this.materials.speedometer);
+    this.shapes.square.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(1.5, -0.7, -2.99))
+        .times(Mat4.scale(0.8, 0.8, 0.8)).times(Mat4.rotation(Math.PI+Math.PI/4+Math.PI/8-this.car_speed*((3*Math.PI)/(2*8)),0,0,1)), this.materials.pointer);
     /* arrow_transform = arrow_transform.times(Mat4.translation(0, 3, 75));
     arrow_transform = arrow_transform.times(Mat4.scale(1, 1, C_SCALE));
     this.shapes.cylinder.draw(context, program_state, arrow_transform, this.materials.sky);
