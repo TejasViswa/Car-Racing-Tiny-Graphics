@@ -769,7 +769,6 @@ export class Environment extends Scene {
     let ground_transform = Mat4.identity()
     let arch_transform = Mat4.identity()
     let road_transform = Mat4.identity()
-    let arrow_transform = Mat4.identity()
     let car_transform = Mat4.identity()
 
 
@@ -793,28 +792,7 @@ export class Environment extends Scene {
           .times(Mat4.scale(.2, .2, .2)), this.materials.start_text);
       console.log('Game Won')
     }
-    /* arrow_transform = arrow_transform.times(Mat4.translation(0, 3, 75));
-    arrow_transform = arrow_transform.times(Mat4.scale(1, 1, C_SCALE));
-    this.shapes.cylinder.draw(context, program_state, arrow_transform, this.materials.sky);
-    arrow_transform = arrow_transform.times(Mat4.scale(3, 1.5, 3/5));
-    arrow_transform = arrow_transform.times(Mat4.rotation(Math.PI, 0, 1, 0));
-    arrow_transform = arrow_transform.times(Mat4.translation(0, 0, C_SCALE*3/5));
-    this.shapes.cone.draw(context, program_state, arrow_transform, this.materials.sky);
-    
-    // Check which way car is moving (z-axis only for now)
-    let dz = this.prev_z - program_state.camera_inverse[2][3];
-    this.prev_z = program_state.camera_inverse[2][3];
-    
-    // Moving "forward" with respect to original camera location and orientation
-    if (dz < 0){
-        this.positional_offset = Mat4.translation(0, 0, this.prev_z + dz)
-        //console.log(this.prev_z + dz);
-    }
-    // Moving "backward" with respect to original camera location and orientation
-    else if (dz > 0){ 
-        this.positional_offset = Mat4.translation(0, 0, this.prev_z + dz);
-        //console.log(this.prev_z + dz);
-    } */
+ 
     this.car_prev_Z_POS = this.car_Z_POS
     let current_Z_POS = this.car_transform[2][3]
     this.car_Z_POS = current_Z_POS
@@ -952,7 +930,7 @@ export class Environment extends Scene {
     // draw obstacles
     this.obstacles.forEach((element) => {
       const idx = this.obstacles.indexOf(element)
-      if (this.bodies[idx][1] === Collision.intact){
+      if (this.bodies[idx][1] === Collision.intact && (element[0][2][3] - this.car[2][3] < 80)){
         if (element[1] === 1){
           this.shapes.roadblock.draw(
             context,
@@ -1043,7 +1021,7 @@ export class Environment extends Scene {
       if (obstacle_type === 0){
         boulder_transform = boulder_transform
           .times(Mat4.scale(B_SCALE, B_SCALE, B_SCALE))
-          .times(Mat4.translation(side*B_SCALE, 1/B_SCALE, (-70*Math.abs(this.car_speed) + this.obstacles[this.obstacles.length -1][0][2][3])/B_SCALE));
+          .times(Mat4.translation(side*B_SCALE, 1/B_SCALE, (-50 + -70*Math.abs(this.car_speed) + this.obstacles[this.obstacles.length -1][0][2][3])/B_SCALE));
         this.obstacles.push([boulder_transform, obstacle_type]);
         // represent an obstacle as a body
         this.bodies.push([
@@ -1058,7 +1036,7 @@ export class Environment extends Scene {
       else{
         roadblock_transform = roadblock_transform
           .times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE))
-          .times(Mat4.translation(side*RB_SCALE, 1/RB_SCALE, (-70*Math.abs(this.car_speed) + this.obstacles[this.obstacles.length -1][0][2][3])/RB_SCALE));
+          .times(Mat4.translation(side*RB_SCALE, 1/RB_SCALE, (-50 + -70*Math.abs(this.car_speed) + this.obstacles[this.obstacles.length -1][0][2][3])/RB_SCALE));
         this.obstacles.push([roadblock_transform, obstacle_type]);
         // represent an obstacle as a body
         this.bodies.push([
