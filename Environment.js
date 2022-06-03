@@ -640,7 +640,7 @@ export class Environment extends Scene {
               Math.PI +
                 Math.PI / 4 +
                 Math.PI / 8 -
-                this.car_speed * ((7 * Math.PI) / (4 * 8)),
+                Math.abs(this.car_speed * ((7 * Math.PI) / (4 * 8))),
               0,
               0,
               1
