@@ -880,7 +880,7 @@ export class Environment extends Scene {
         context,
         program_state,
         sky_transform,
-        this.materials.stars
+        this.materials.pointer
       )
       // draw the ground
       ground_transform = ground_transform
