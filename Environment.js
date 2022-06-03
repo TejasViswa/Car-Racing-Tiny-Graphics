@@ -826,7 +826,7 @@ export class Environment extends Scene {
       vec3(1, 1, 1)
     ).emplace(
       this.car
-        .times(Mat4.rotation(-Math.PI / 8, 0, 1, 0))
+        .times(Mat4.rotation(Math.PI / 12, 1, 0, 0))
         .times(Mat4.scale(0.6, 1, 1)),
       vec3(0, 0, 0),
       0
@@ -848,10 +848,8 @@ export class Environment extends Scene {
   generate_obstacles(program_state) {
     let roadblock_transform = Mat4.identity()
     let boulder_transform = Mat4.identity()
-    console.log(
-      this.obstacles[this.obstacles.length - 1][0][2][3] - this.car[2][3]
-    )
-    console.log(this.obstacles.length)
+    // console.log(this.obstacles[this.obstacles.length - 1][0][2][3] - this.car[2][3])
+    // console.log(this.obstacles.length)
     if (
       (Math.random() > 0.8 &&
         Math.floor(program_state.animation_time) % 5 === 0 &&
