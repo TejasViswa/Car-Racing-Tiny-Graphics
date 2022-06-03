@@ -439,7 +439,7 @@ export class Environment extends Scene {
     )
     this.won = 0
     this.end_time = 0
-    this.game_timer = 60
+    this.game_timer = 30
     this.no_of_collision = 0
     this.game_status = 0
     this.X_POS = 0
@@ -880,7 +880,7 @@ export class Environment extends Scene {
         context,
         program_state,
         sky_transform,
-        this.materials.sky
+        this.materials.stars
       )
       // draw the ground
       ground_transform = ground_transform
