@@ -1014,8 +1014,7 @@ export class Environment extends Scene {
         this.car_Z_POS - this.car_prev_Z_POS !== 0 &&
         this.car_speed > 0 &&
         this.obstacles.length > 0 &&
-        this.obstacles[this.obstacles.length - 1][0][2][3] - this.car[2][3] >
-          -15) ||
+        this.obstacles[this.obstacles.length - 1][0][2][3] - this.car[2][3] > -15) ||
       this.obstacles[this.obstacles.length - 1][0][2][3] - this.car[2][3] > 80
     ) {
       let side = -0.45
@@ -1037,7 +1036,7 @@ export class Environment extends Scene {
             Mat4.translation(
               side * B_SCALE,
               1 / B_SCALE,
-              (-70 * Math.abs(this.car_speed) +
+              (-60 - 70 * Math.abs(this.car_speed) +
                 this.obstacles[this.obstacles.length - 1][0][2][3]) /
                 B_SCALE
             )
@@ -1059,7 +1058,7 @@ export class Environment extends Scene {
             Mat4.translation(
               side * RB_SCALE,
               1 / RB_SCALE,
-              (-70 * Math.abs(this.car_speed) +
+              (-60 - 70 * Math.abs(this.car_speed) +
                 this.obstacles[this.obstacles.length - 1][0][2][3]) /
                 RB_SCALE
             )
