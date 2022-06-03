@@ -373,8 +373,18 @@ export class Environment extends Scene {
         color: hex_color("#2F4F4F"),
       }),
 
+      start_text: new Material(new Textured_Phong(), {
+        color: color(0, 0, 255, 1),
+        ambient: 0.5,
+        diffusivity: 0.1,
+        specularity: 0.1,
+        texture: new Texture("assets/text.png")
+      }),
       text_image: new Material(new Textured_Phong(), {
-        ambient: 1, diffusivity: 0, specularity: 0,
+        color: color(0, 0, 0, 1),
+        ambient: 0.5,
+        diffusivity: 0.1,
+        specularity: 0.1,
         texture: new Texture("assets/text.png")
       }),
 
@@ -441,7 +451,8 @@ export class Environment extends Scene {
     this.car_Z_POS = 60
     this.car_prev_Z_POS = 60
     this.current_camera_pos =  null;
-
+    this.game_start = false;
+    this.time_offset = -1;
     this.obstacles = [
       [Mat4.identity()
         .times(Mat4.scale(RB_SCALE, RB_SCALE, RB_SCALE))
@@ -547,6 +558,24 @@ export class Environment extends Scene {
     this.car_speed_limit = 8
     this.car_nitro_audio.play()
   }
+  start_game(t, context, program_state){
+    if(this.game_start === false){
+      this.shapes.text.set_string("Start Game", context.context);
+      this.shapes.text.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(-1.25, 0, -3))
+          .times(Mat4.scale(.2, .2, .2)), this.materials.start_text);
+    }
+    else {
+      if(this.time_offset===-1)
+        this.time_offset = t;
+      this.shapes.text.set_string((t-this.time_offset).toFixed(2).toString(), context.context);
+      this.shapes.text.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(-2, -1, -3))
+          .times(Mat4.scale(.2, .2, .2)), this.materials.text_image);
+      this.shapes.square.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(1.5, -0.7, -3))
+          .times(Mat4.scale(0.8, 0.8, 0.8)), this.materials.speedometer);
+      this.shapes.square.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(1.5, -0.7, -2.99))
+          .times(Mat4.scale(0.8, 0.8, 0.8)).times(Mat4.rotation(Math.PI + Math.PI / 4 + Math.PI / 8 - this.car_speed * ((7 * Math.PI) / (4 * 8)), 0, 0, 1)), this.materials.pointer);
+    }
+  }
   movement(t) {
     // audio loop
     if (this.car_acc_audio.currentTime > 22) {
@@ -617,6 +646,12 @@ export class Environment extends Scene {
     )
     this.new_line()
     this.key_triggered_button(
+        'Game Start',
+        ['g'],
+        () => (this.game_start = true)
+    )
+    this.new_line()
+    this.key_triggered_button(
       'Move Forward',
       ['u'],
       this.move_forward,
@@ -664,8 +699,13 @@ export class Environment extends Scene {
 
       program_state.set_camera(Mat4.translation(0, -1, -90))
       this.current_camera_pos = program_state.camera_transform;
-    }
 
+    }
+    // if(this.attached === undefined){
+    //   this.shapes.text.set_string("Start Game", context.context);
+    //   this.shapes.text.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(0, 0, -3))
+    //       .times(Mat4.scale(.2, .2, .2)), this.materials.text_image);
+    // }
     if (this.attached !== undefined) {
       let desired = this.initial_camera_location
       if (this.attached() !== null)
@@ -697,13 +737,8 @@ export class Environment extends Scene {
     let arrow_transform = Mat4.identity()
     let car_transform = Mat4.identity()
 
-    this.shapes.text.set_string(t.toFixed(2).toString(), context.context);
-    this.shapes.text.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(-2, -1, -3))
-        .times(Mat4.scale(.2, .2, .2)), this.materials.text_image);
-    this.shapes.square.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(1.5, -0.7, -3))
-        .times(Mat4.scale(0.8, 0.8, 0.8)), this.materials.speedometer);
-    this.shapes.square.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(1.5, -0.7, -2.99))
-        .times(Mat4.scale(0.8, 0.8, 0.8)).times(Mat4.rotation(Math.PI+Math.PI/4+Math.PI/8-this.car_speed*((3*Math.PI)/(2*8)),0,0,1)), this.materials.pointer);
+
+    this.start_game(t, context, program_state);
     /* arrow_transform = arrow_transform.times(Mat4.translation(0, 3, 75));
     arrow_transform = arrow_transform.times(Mat4.scale(1, 1, C_SCALE));
     this.shapes.cylinder.draw(context, program_state, arrow_transform, this.materials.sky);
