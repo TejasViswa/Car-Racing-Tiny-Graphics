@@ -787,6 +787,7 @@ export class Environment extends Scene {
     if(t - this.time_offset>this.game_timer && this.no_of_collision <3){
       this.shapes.text.set_string("You Won!!!", context.context);
       this.shapes.text.draw(context, program_state, this.current_camera_pos.times(Mat4.translation(-0.75, 0.75, -3))
+          .times(Mat4.scale(.2, .2, .2)), this.materials.start_text);
       console.log('Game Won')
     }
     /* arrow_transform = arrow_transform.times(Mat4.translation(0, 3, 75));
