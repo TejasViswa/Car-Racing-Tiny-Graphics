@@ -15,8 +15,9 @@ activate your nitro and satisfy your need for speed! Are you up for the challeng
 Play and find out!**
 
 ## How to Run the Game:
-- Pull the repository onto your local machine
-- Run the server.py Python file in the folder
+- Clone/Pull the repository onto your local machine
+- Run host.bat on Windows or host.command on MacOS
+- Run the server.py Python file in the folder, or alternatively run this command: python -m http.server
 - Go to your browser and go to localhost:8000
 - From there, the game should show up and you can play!
 
