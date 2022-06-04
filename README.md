@@ -7,7 +7,7 @@
 - **Tejas Viswanath**
 
 ## The Game
-**60 seconds. That's all you need to win. Take your sports car for a spin
+**30 seconds. That's all you need to win. Take your sports car for a spin
 and see if you survive on the road. However, it won't be easy. The road is
 littered with obstacles trying to stop you from hitting the redline! 
 Maneuver around them and show the world your driving skills! For extra flair,
